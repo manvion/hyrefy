@@ -44,7 +44,7 @@ export function DashboardSidebar() {
   return (
     <aside
       className={cn(
-        "flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 shrink-0",
+        "hidden lg:flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 shrink-0",
         collapsed ? "w-16" : "w-64"
       )}
     >

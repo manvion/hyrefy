@@ -27,40 +27,86 @@ const jsonLd = {
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://app.hyrefy.com";
+
 export const metadata: Metadata = {
   title: { default: "Hyrefy — AI Resume Optimizer | Beat ATS & Land More Interviews", template: "%s | Hyrefy" },
   description:
-    "Hyrefy uses AI to generate a perfectly tailored resume and cover letter for every job. ATS-optimized, in English or French, for 9 countries — in seconds. Free to start.",
+    "Hyrefy uses AI to generate a tailored resume and cover letter for every job in seconds. ATS-optimized for the US, UK, Canada, Australia, France, India and 4 more countries. Free to start.",
   keywords: [
-    "resume optimizer", "ATS score", "AI resume", "job application", "resume rewriter",
-    "cover letter generator", "ATS compatibility", "resume builder", "job search",
-    "optimisation CV", "lettre de motivation", "score ATS", "CV optimisé",
+    // English — global
+    "AI resume optimizer", "ATS resume checker", "resume builder AI", "cover letter generator",
+    "job application helper", "resume rewriter", "ATS score", "beat ATS", "resume tailor",
+    // US
+    "resume builder USA", "ATS optimized resume", "American resume format",
+    // Canada
+    "resume builder Canada", "Canadian resume", "CV builder Canada",
+    // UK
+    "CV optimizer UK", "ATS CV checker UK", "British CV builder", "UK job application",
+    // Australia
+    "resume builder Australia", "ATS resume Australia", "Australian resume format",
+    // New Zealand
+    "resume builder New Zealand", "NZ CV builder",
+    // India
+    "resume builder India", "ATS resume India", "Indian CV format", "job resume India",
+    // French
+    "optimisation CV", "générateur lettre de motivation", "score ATS", "CV optimisé IA",
+    "constructeur CV France", "optimisation CV Belgique", "CV Suisse",
   ],
   authors: [{ name: "Hyrefy" }],
   creator: "Hyrefy",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://app.hyrefy.com"),
+  publisher: "Hyrefy",
+  category: "Technology",
+  metadataBase: new URL(APP_URL),
   alternates: {
     canonical: "/",
-    languages: { "en": "/en", "fr": "/fr" },
+    languages: {
+      "en":    "/",
+      "en-US": "/",
+      "en-CA": "/",
+      "en-GB": "/",
+      "en-AU": "/",
+      "en-NZ": "/",
+      "en-IN": "/",
+      "fr":    "/",
+      "fr-FR": "/",
+      "fr-BE": "/",
+      "fr-CH": "/",
+      "x-default": "/",
+    },
+  },
+  icons: {
+    icon: [
+      { url: "/icon", type: "image/png", sizes: "32x32" },
+    ],
+    apple: [
+      { url: "/apple-icon", type: "image/png", sizes: "180x180" },
+    ],
+    shortcut: "/icon",
   },
   openGraph: {
     title: "Hyrefy — Beat ATS & Land More Interviews with AI",
-    description: "AI-powered resume optimizer. Get ATS scores, tailored rewrites & cover letters in English or French — in seconds. Free to start.",
+    description: "AI-powered resume optimizer trusted in 9 countries. Tailored resume + cover letter in seconds — free to start.",
     type: "website",
     url: "/",
     siteName: "Hyrefy",
     locale: "en_US",
+    alternateLocale: ["en_CA", "en_GB", "en_AU", "en_NZ", "en_IN", "fr_FR", "fr_BE", "fr_CH"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Hyrefy — AI Resume Optimizer",
-    description: "Beat ATS. Land more interviews. AI-powered resume optimization in seconds.",
+    description: "Beat ATS. Land more interviews. AI-powered resume optimization in seconds — free.",
     creator: "@hyrefy",
+    site: "@hyrefy",
   },
   robots: {
     index: true,
     follow: true,
     googleBot: { index: true, follow: true, "max-video-preview": -1, "max-image-preview": "large", "max-snippet": -1 },
+  },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },
 };
 

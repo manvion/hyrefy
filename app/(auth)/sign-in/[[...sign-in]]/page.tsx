@@ -87,7 +87,7 @@ function ClerkSignIn() {
         </div>
         <SignIn
           appearance={clerkAppearance}
-          fallbackRedirectUrl="/dashboard"
+          forceRedirectUrl="/dashboard"
           signUpUrl="/sign-up"
         />
       </div>
