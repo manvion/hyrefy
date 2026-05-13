@@ -16,7 +16,7 @@ function stripUserId(path: string): string {
   return path.replace(/\/(user_\w+|demo_user)$/, "");
 }
 
-function UserAvatar() {
+function UserAvatar({ collapsed }: { collapsed: boolean }) {
   if (isDemoMode) {
     return (
       <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-medium text-primary shrink-0">
@@ -25,13 +25,8 @@ function UserAvatar() {
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { UserButton } = require("@clerk/nextjs");
-  return (
-    <UserButton
-      afterSignOutUrl="/sign-in"
-      appearance={{ variables: { colorPrimary: "hsl(262.1 83.3% 57.8%)" } }}
-    />
-  );
+  const { ClerkUserButton } = require("@/components/dashboard/clerk-user-button");
+  return <ClerkUserButton collapsed={collapsed} />;
 }
 
 function SignOutBtn({ collapsed }: { collapsed: boolean }) {
@@ -161,7 +156,7 @@ export function DashboardSidebar({ userId }: Props) {
         <SignOutBtn collapsed={collapsed} />
 
         <div className={cn("flex items-center gap-3 px-3 py-2 mt-1 border-t border-border/20 pt-3", collapsed && "justify-center px-2")}>
-          <UserAvatar />
+          <UserAvatar collapsed={collapsed} />
           {!collapsed && <span className="text-sm text-muted-foreground truncate">Account</span>}
         </div>
       </div>
