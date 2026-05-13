@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -11,23 +10,54 @@ const isValidClerkKey =
   !clerkKey.includes("dummy");
 const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !isValidClerkKey;
 
+const clerkAppearance = {
+  variables: {
+    colorPrimary: "#0A66C2",
+    colorBackground: "#ffffff",
+    colorInputBackground: "#f8fafc",
+    colorInputText: "#0f172a",
+    colorText: "#0f172a",
+    colorTextSecondary: "#64748b",
+    colorNeutral: "#64748b",
+    colorSuccess: "#10b981",
+    colorDanger: "#ef4444",
+    borderRadius: "0.75rem",
+    fontFamily: "inherit",
+    fontSize: "14px",
+  },
+  elements: {
+    card: "shadow-xl border border-slate-200",
+    headerTitle: "text-slate-900 font-bold",
+    headerSubtitle: "text-slate-500",
+    socialButtonsBlockButton: "border border-slate-200 hover:bg-slate-50 text-slate-700",
+    formFieldInput: "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-slate-900 bg-white",
+    formFieldLabel: "text-slate-700 font-medium",
+    formButtonPrimary: "bg-[#0A66C2] hover:bg-[#004182] text-white font-semibold",
+    footerActionLink: "text-[#0A66C2] hover:text-[#004182] font-medium",
+    identityPreviewEditButton: "text-[#0A66C2]",
+    dividerLine: "bg-slate-200",
+    dividerText: "text-slate-400",
+  },
+};
+
 function DemoSignUp() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#F3F2EF] dark:bg-background px-4">
+      <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <HyreLogo size={48} />
-          </div>
-          <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="text-muted-foreground mt-1">Start generating tailored resumes for free</p>
+          <Link href="/" className="inline-flex items-center gap-2 mb-6">
+            <HyreLogo size={40} />
+            <span className="text-xl font-bold text-slate-900 dark:text-foreground">Hyrefy</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Create your account</h1>
+          <p className="text-slate-500 dark:text-muted-foreground mt-1">Start generating tailored resumes for free</p>
         </div>
 
-        <div className="rounded-2xl border border-border/50 bg-card/30 p-8 space-y-4">
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-            <p className="text-sm text-amber-400 font-medium">Demo Mode</p>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Authentication is running in demo mode. Add real Clerk keys to enable full sign-up.
+        <div className="rounded-2xl border border-slate-200 dark:border-border/50 bg-white dark:bg-card/30 p-8 shadow-xl space-y-4">
+          <div className="rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10 px-4 py-3">
+            <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">Demo Mode</p>
+            <p className="text-xs text-amber-600/70 dark:text-muted-foreground mt-0.5">
+              Add real Clerk keys in Vercel to enable full sign-up.
             </p>
           </div>
 
@@ -38,9 +68,9 @@ function DemoSignUp() {
             </Link>
           </Button>
 
-          <p className="text-center text-xs text-muted-foreground">
+          <p className="text-center text-xs text-slate-500 dark:text-muted-foreground">
             Already have an account?{" "}
-            <Link href="/sign-in" className="text-primary hover:underline">
+            <Link href="/sign-in" className="text-[#0A66C2] hover:underline font-medium">
               Sign in
             </Link>
           </p>
@@ -51,27 +81,35 @@ function DemoSignUp() {
 }
 
 function ClerkSignUp() {
-  // Loaded dynamically only when ClerkProvider is present
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { SignUp } = require("@clerk/nextjs");
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="w-full max-w-md px-4">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold">Create your account</h1>
-          <p className="text-muted-foreground mt-1">Start generating tailored resumes for free</p>
+    <div className="min-h-screen bg-[#F3F2EF] dark:bg-background flex flex-col">
+      {/* Top nav */}
+      <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
+        <Link href="/" className="flex items-center gap-2.5 group">
+          <HyreLogo size={36} />
+          <span className="text-lg font-bold text-slate-900 dark:text-foreground group-hover:text-[#0A66C2] transition-colors">
+            Hyrefy
+          </span>
+        </Link>
+        <p className="text-sm text-slate-500 dark:text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/sign-in" className="text-[#0A66C2] hover:underline font-medium">
+            Sign in
+          </Link>
+        </p>
+      </nav>
+
+      {/* Centered Clerk widget */}
+      <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Create your account</h1>
+          <p className="text-slate-500 dark:text-muted-foreground mt-1">
+            Free forever. No credit card required.
+          </p>
         </div>
-        <SignUp
-          appearance={{
-            variables: {
-              colorPrimary: "hsl(262.1 83.3% 57.8%)",
-              colorBackground: "hsl(224 71.4% 4.1%)",
-              colorInputBackground: "hsl(215 27.9% 10%)",
-              colorText: "hsl(210 20% 98%)",
-              borderRadius: "0.625rem",
-            },
-          }}
-        />
+        <SignUp appearance={clerkAppearance} />
       </div>
     </div>
   );
