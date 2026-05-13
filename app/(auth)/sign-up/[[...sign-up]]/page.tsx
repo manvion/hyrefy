@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SignUp } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
@@ -63,8 +64,6 @@ function DemoSignUp() {
 }
 
 function ClerkSignUp() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { SignUp } = require("@clerk/nextjs");
   return (
     <div className="min-h-screen bg-[#F3F2EF] dark:bg-background flex flex-col">
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
