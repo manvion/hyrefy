@@ -20,37 +20,13 @@ const isPublicRoute = createRouteMatcher([
   "/api/user/geo",
 ]);
 
-// Dashboard pages that get a userId segment appended to the URL
-const DASHBOARD_PATHS = new Set([
-  "/dashboard",
-  "/generate",
-  "/billing",
-  "/history",
-  "/settings",
-  "/analyze",
-  "/rewrite",
-  "/interview-prep",
-  "/roast",
-  "/tracker",
-  "/resume/upload",
-]);
 
 function isUserId(segment: string): boolean {
   return segment.startsWith("user_") || segment === "demo_user";
 }
 
-// Clerk middleware: runs only when hasValidKey — handles auth + user-specific redirect
+// Clerk middleware: runs only when hasValidKey
 const clerkHandler = clerkMiddleware(async (auth, request) => {
-  const { userId } = await auth();
-  const url = request.nextUrl;
-
-  if (userId && DASHBOARD_PATHS.has(url.pathname)) {
-    // Redirect generic path → user-specific path
-    return NextResponse.redirect(
-      new URL(`${url.pathname}/${userId}${url.search}`, request.url)
-    );
-  }
-
   if (!isPublicRoute(request)) {
     await auth.protect();
   }
@@ -84,28 +60,13 @@ export function middleware(request: NextRequest) {
       return NextResponse.rewrite(new URL("/job-seekers", request.url));
     }
 
-    if (!hasValidKey) {
-      // Demo mode: redirect dashboard paths to demo_user-specific URL
-      if (DASHBOARD_PATHS.has(url.pathname)) {
-        return NextResponse.redirect(
-          new URL(`${url.pathname}/demo_user${url.search}`, request.url)
-        );
-      }
-      return NextResponse.next();
-    }
+    if (!hasValidKey) return NextResponse.next();
 
     return clerkHandler(request, {} as never);
   }
 
   // ─── Default (non-subdomain) ───────────────────────────────────────────────
-  if (!hasValidKey) {
-    if (DASHBOARD_PATHS.has(url.pathname)) {
-      return NextResponse.redirect(
-        new URL(`${url.pathname}/demo_user${url.search}`, request.url)
-      );
-    }
-    return NextResponse.next();
-  }
+  if (!hasValidKey) return NextResponse.next();
 
   return clerkHandler(request, {} as never);
 }
