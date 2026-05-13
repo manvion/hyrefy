@@ -26,13 +26,13 @@ export default async function DashboardPage() {
   let totalGenerations = 0;
 
   try {
-    // Upsert user first (needed for all subsequent queries)
+    // Upsert user — use clerkId-based placeholder email (sync API sets the real one)
     const user = await db.user.upsert({
       where: { clerkId: userId },
       update: {},
       create: {
         clerkId: userId,
-        email: "",
+        email: `${userId}@placeholder.hyrefy.com`,
         subscription: { create: { scansUsed: 0, scansLimit: 3 } },
       },
       include: { subscription: true },
