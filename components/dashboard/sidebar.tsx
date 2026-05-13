@@ -9,7 +9,8 @@ import { cn } from "@/lib/utils/cn";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 import {
   LayoutDashboard, Upload, Sparkles, CreditCard,
-  Settings, ChevronLeft, ChevronRight, History, LogOut
+  Settings, ChevronLeft, ChevronRight, History, LogOut,
+  Flame, BrainCircuit, KanbanSquare, FileSearch,
 } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 
@@ -71,10 +72,14 @@ function SignOutBtn({ collapsed }: { collapsed: boolean }) {
 }
 
 const navItems = [
-  { href: "/dashboard",     icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/resume/upload", icon: Upload,           label: "My Resume" },
-  { href: "/generate",      icon: Sparkles,         label: "Generate"  },
-  { href: "/history",       icon: History,          label: "History"   },
+  { href: "/dashboard",      icon: LayoutDashboard, label: "Dashboard"    },
+  { href: "/resume/upload",  icon: Upload,          label: "My Resume"    },
+  { href: "/generate",       icon: Sparkles,        label: "Generate"     },
+  { href: "/analyze",        icon: FileSearch,      label: "ATS Analyzer" },
+  { href: "/tracker",        icon: KanbanSquare,    label: "Job Tracker"  },
+  { href: "/history",        icon: History,         label: "History"      },
+  { href: "/roast",          icon: Flame,           label: "Roast My CV"  },
+  { href: "/interview-prep", icon: BrainCircuit,    label: "Interview AI" },
 ];
 
 const bottomItems = [
