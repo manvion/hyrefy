@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { LanguageProvider } from "@/components/shared/language-provider";
 import { Toaster } from "@/components/ui/toaster";
@@ -88,5 +87,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   );
 
-  return isValidClerkKey ? <ClerkProvider>{content}</ClerkProvider> : content;
+  if (isValidClerkKey) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ClerkProvider } = require("@clerk/nextjs");
+    return <ClerkProvider>{content}</ClerkProvider>;
+  }
+  return content;
 }
