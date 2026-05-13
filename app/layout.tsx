@@ -136,7 +136,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   if (isValidClerkKey) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ClerkProvider } = require("@clerk/nextjs");
-    return <ClerkProvider>{content}</ClerkProvider>;
+    return (
+      <ClerkProvider afterSignOutUrl="/sign-in" signInUrl="/sign-in" signUpUrl="/sign-up">
+        {content}
+      </ClerkProvider>
+    );
   }
   return content;
 }

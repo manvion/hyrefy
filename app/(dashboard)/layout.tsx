@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic";
-
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { MobileNav } from "@/components/dashboard/mobile-nav";

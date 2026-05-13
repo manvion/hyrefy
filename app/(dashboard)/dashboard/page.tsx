@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUserId } from "@/lib/utils/auth";
@@ -7,8 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Sparkles, History, FileText, TrendingUp, Clock, ArrowRight, CheckCircle2 } from "lucide-react";
 
-const SIX_MONTHS_AGO = new Date();
-SIX_MONTHS_AGO.setMonth(SIX_MONTHS_AGO.getMonth() - 6);
+const sixMonthsAgo = () => {
+  const d = new Date();
+  d.setMonth(d.getMonth() - 6);
+  return d;
+};
 
 export default async function DashboardPage() {
   const userId = await getAuthUserId();
@@ -21,6 +26,7 @@ export default async function DashboardPage() {
   let totalGenerations = 0;
 
   try {
+    // Upsert user first (needed for all subsequent queries)
     const user = await db.user.upsert({
       where: { clerkId: userId },
       update: {},
@@ -33,29 +39,27 @@ export default async function DashboardPage() {
     });
 
     isPremium = user.subscription?.status === "PREMIUM";
+    const cutoff = sixMonthsAgo();
 
-    const master = await (db as any).resume.findFirst({
-      where: { userId: user.id, isMaster: true },
-    });
-    if (!master) {
-      const any = await (db as any).resume.findFirst({ where: { userId: user.id } });
-      if (any) { hasMasterResume = true; masterResumeFile = any.fileName || ""; }
-    } else {
-      hasMasterResume = true;
-      masterResumeFile = master.fileName || "";
-    }
+    // Run remaining queries in parallel
+    const [masterResume, anyResume, scans, count] = await Promise.all([
+      (db as any).resume.findFirst({ where: { userId: user.id, isMaster: true }, select: { fileName: true } }),
+      (db as any).resume.findFirst({ where: { userId: user.id }, select: { fileName: true } }),
+      db.resumeScan.findMany({
+        where: { userId: user.id, createdAt: { gte: cutoff } },
+        orderBy: { createdAt: "desc" },
+        take: 4,
+        select: { id: true, jobTitle: true, company: true, atsScore: true, createdAt: true },
+      }),
+      db.resumeScan.count({ where: { userId: user.id, createdAt: { gte: cutoff } } }),
+    ]);
 
-    recentScans = await db.resumeScan.findMany({
-      where: { userId: user.id, createdAt: { gte: SIX_MONTHS_AGO } },
-      orderBy: { createdAt: "desc" },
-      take: 4,
-    });
-
-    totalGenerations = await db.resumeScan.count({
-      where: { userId: user.id, createdAt: { gte: SIX_MONTHS_AGO } },
-    });
+    const resume = masterResume ?? anyResume;
+    if (resume) { hasMasterResume = true; masterResumeFile = resume.fileName || ""; }
+    recentScans = scans;
+    totalGenerations = count;
   } catch {
-    // DB not configured yet — demo state
+    // DB not configured — demo state
   }
 
   const avgScore = recentScans.length
@@ -64,15 +68,12 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8 max-w-4xl">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          Your AI-powered resume generation hub
-        </p>
+        <p className="text-muted-foreground text-sm mt-0.5">Your AI-powered resume generation hub</p>
       </div>
 
-      {/* Master Resume Status — most prominent card */}
+      {/* Master Resume Status */}
       <Card className={`border ${hasMasterResume ? "border-emerald-500/30 bg-emerald-500/5" : "border-primary/30 bg-primary/5"}`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between gap-4">
@@ -96,9 +97,7 @@ export default async function DashboardPage() {
               </div>
             </div>
             <Button asChild variant={hasMasterResume ? "outline" : "gradient"} size="sm" className="shrink-0">
-              <Link href="/resume/upload">
-                {hasMasterResume ? "Update" : "Upload Now"}
-              </Link>
+              <Link href="/resume/upload">{hasMasterResume ? "Update" : "Upload Now"}</Link>
             </Button>
           </div>
         </CardContent>
@@ -115,14 +114,13 @@ export default async function DashboardPage() {
               <div>
                 <p className="font-semibold text-base">Ready to apply for a new job?</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Paste the job description — we generate a tailored resume and cover letter in seconds
+                  Paste the job description — get a tailored resume and cover letter in seconds
                 </p>
               </div>
             </div>
             <Button asChild variant="gradient" size="lg" className="shrink-0">
               <Link href="/generate">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Generate
+                <Sparkles className="mr-2 h-4 w-4" />Generate
               </Link>
             </Button>
           </CardContent>
@@ -199,18 +197,17 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Empty state if no master resume */}
+      {/* Empty state */}
       {!hasMasterResume && (
         <div className="text-center py-14 rounded-2xl border border-dashed border-border/50">
           <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Start with your master resume</h3>
           <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
-            Upload your comprehensive resume once. Our AI will tailor it perfectly for each job you target — in English or French.
+            Upload your comprehensive resume once. Our AI tailors it for every job — in English or French.
           </p>
           <Button asChild variant="gradient" size="lg">
             <Link href="/resume/upload">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Master Resume
+              <Upload className="mr-2 h-4 w-4" />Upload Master Resume
             </Link>
           </Button>
         </div>
