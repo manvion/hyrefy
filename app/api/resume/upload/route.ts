@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { extractText } from "@/lib/utils/file-parser";
-import { parseResumeWithAI } from "@/lib/ai/resume-parser";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,10 +49,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Could not extract text from file. Please ensure it's a valid resume." }, { status: 400 });
     }
 
-    // Parse with AI
-    const parsedData = await parseResumeWithAI(rawText);
-
-    // Save resume to DB
+    // Save resume to DB — no AI at upload time, AI only runs during Generate
     const resume = await db.resume.create({
       data: {
         userId: user.id,
@@ -61,14 +57,13 @@ export async function POST(req: NextRequest) {
         fileUrl: "",
         fileType: file.type,
         rawText,
-        parsedData: JSON.parse(JSON.stringify(parsedData)),
+        parsedData: {},
       },
     });
 
     return NextResponse.json({
       resumeId: resume.id,
-      parsedData,
-      message: "Resume uploaded and parsed successfully",
+      message: "Resume uploaded successfully",
     });
   } catch (error) {
     console.error("Resume upload error:", error);
