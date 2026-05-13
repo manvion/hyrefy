@@ -1,7 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+import { isDemoMode } from "@/lib/utils/demo-mode";
 
 export async function getAuthUserId(): Promise<string | null> {
   if (isDemoMode) return "demo-user";

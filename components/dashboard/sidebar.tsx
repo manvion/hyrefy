@@ -5,8 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+import { isDemoMode } from "@/lib/utils/demo-mode";
 
 function UserAvatar() {
   if (isDemoMode) {

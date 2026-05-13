@@ -2,8 +2,7 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = { title: "Settings" };
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+import { isDemoMode } from "@/lib/utils/demo-mode";
 
 function ClerkUserProfile() {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

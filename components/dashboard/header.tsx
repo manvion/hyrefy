@@ -4,8 +4,7 @@ import { Bell, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+import { isDemoMode } from "@/lib/utils/demo-mode";
 
 function ClerkGreeting() {
   // Dynamically require so it's only evaluated when ClerkProvider is present

@@ -6,8 +6,7 @@ import { GenerateClient } from "@/components/generate/generate-client";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
 
-const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+import { isDemoMode } from "@/lib/utils/demo-mode";
 
 const DEMO_RESUME = `JANE SMITH
 jane.smith@email.com | LinkedIn: linkedin.com/in/janesmith | Toronto, ON
