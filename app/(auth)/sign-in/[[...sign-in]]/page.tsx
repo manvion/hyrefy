@@ -15,28 +15,14 @@ const clerkAppearance = {
     colorPrimary: "#0A66C2",
     colorBackground: "#ffffff",
     colorInputBackground: "#f8fafc",
-    colorInputText: "#0f172a",
     colorText: "#0f172a",
     colorTextSecondary: "#64748b",
-    colorNeutral: "#64748b",
+    colorNeutral: "#94a3b8",
     colorSuccess: "#10b981",
     colorDanger: "#ef4444",
     borderRadius: "0.75rem",
     fontFamily: "inherit",
     fontSize: "14px",
-  },
-  elements: {
-    card: "shadow-xl border border-slate-200",
-    headerTitle: "text-slate-900 font-bold",
-    headerSubtitle: "text-slate-500",
-    socialButtonsBlockButton: "border border-slate-200 hover:bg-slate-50 text-slate-700",
-    formFieldInput: "border-slate-200 focus:border-blue-500 focus:ring-blue-500/20 text-slate-900 bg-white",
-    formFieldLabel: "text-slate-700 font-medium",
-    formButtonPrimary: "bg-[#0A66C2] hover:bg-[#004182] text-white font-semibold",
-    footerActionLink: "text-[#0A66C2] hover:text-[#004182] font-medium",
-    identityPreviewEditButton: "text-[#0A66C2]",
-    dividerLine: "bg-slate-200",
-    dividerText: "text-slate-400",
   },
 };
 
@@ -60,19 +46,15 @@ function DemoSignIn() {
               Add real Clerk keys in Vercel to enable full sign-in.
             </p>
           </div>
-
           <Button asChild variant="gradient" size="lg" className="w-full">
             <Link href="/dashboard">
               Continue to Dashboard
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
-
           <p className="text-center text-xs text-slate-500 dark:text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">
-              Sign up free
-            </Link>
+            <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">Sign up free</Link>
           </p>
         </div>
       </div>
@@ -85,7 +67,6 @@ function ClerkSignIn() {
   const { SignIn } = require("@clerk/nextjs");
   return (
     <div className="min-h-screen bg-[#F3F2EF] dark:bg-background flex flex-col">
-      {/* Top nav */}
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
         <Link href="/" className="flex items-center gap-2.5 group">
           <HyreLogo size={36} />
@@ -95,21 +76,20 @@ function ClerkSignIn() {
         </Link>
         <p className="text-sm text-slate-500 dark:text-muted-foreground">
           New to Hyrefy?{" "}
-          <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">
-            Create account
-          </Link>
+          <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">Create account</Link>
         </p>
       </nav>
 
-      {/* Centered Clerk widget */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Welcome back</h1>
-          <p className="text-slate-500 dark:text-muted-foreground mt-1">
-            Sign in to continue optimizing your resume
-          </p>
+          <p className="text-slate-500 dark:text-muted-foreground mt-1">Sign in to continue optimizing your resume</p>
         </div>
-        <SignIn appearance={clerkAppearance} />
+        <SignIn
+          appearance={clerkAppearance}
+          fallbackRedirectUrl="/dashboard"
+          signUpUrl="/sign-up"
+        />
       </div>
     </div>
   );
