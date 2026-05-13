@@ -2,39 +2,80 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
-
 import { isDemoMode } from "@/lib/utils/demo-mode";
+import {
+  LayoutDashboard, Upload, Sparkles, CreditCard,
+  Settings, ChevronLeft, ChevronRight, History, LogOut
+} from "lucide-react";
+import { HyreLogo } from "@/components/shared/hyrefy-logo";
 
 function UserAvatar() {
   if (isDemoMode) {
     return (
-      <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-medium text-primary">
+      <div className="h-8 w-8 rounded-full bg-primary/20 border border-primary/30 flex items-center justify-center text-xs font-medium text-primary shrink-0">
         D
       </div>
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { UserButton } = require("@clerk/nextjs");
-  return <UserButton appearance={{ variables: { colorPrimary: "hsl(262.1 83.3% 57.8%)" } }} />;
+  return (
+    <UserButton
+      afterSignOutUrl="/sign-in"
+      appearance={{ variables: { colorPrimary: "hsl(262.1 83.3% 57.8%)" } }}
+    />
+  );
 }
-import {
-  LayoutDashboard, Upload, Sparkles, CreditCard,
-  Settings, ChevronLeft, ChevronRight, History
-} from "lucide-react";
-import { HyreLogo } from "@/components/shared/hyrefy-logo";
+
+function SignOutBtn({ collapsed }: { collapsed: boolean }) {
+  const router = useRouter();
+
+  if (isDemoMode) {
+    return (
+      <button
+        onClick={() => router.push("/sign-in")}
+        className={cn(
+          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+          collapsed && "justify-center px-2"
+        )}
+        title={collapsed ? "Sign Out" : undefined}
+      >
+        <LogOut className="h-4 w-4 shrink-0" />
+        {!collapsed && <span>Sign Out</span>}
+      </button>
+    );
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SignOutButton } = require("@clerk/nextjs");
+  return (
+    <SignOutButton redirectUrl="/sign-in">
+      <button
+        className={cn(
+          "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
+          collapsed && "justify-center px-2"
+        )}
+        title={collapsed ? "Sign Out" : undefined}
+      >
+        <LogOut className="h-4 w-4 shrink-0" />
+        {!collapsed && <span>Sign Out</span>}
+      </button>
+    </SignOutButton>
+  );
+}
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { href: "/resume/upload", icon: Upload, label: "My Resume" },
-  { href: "/generate", icon: Sparkles, label: "Generate" },
-  { href: "/history", icon: History, label: "History" },
+  { href: "/dashboard",     icon: LayoutDashboard, label: "Dashboard" },
+  { href: "/resume/upload", icon: Upload,           label: "My Resume" },
+  { href: "/generate",      icon: Sparkles,         label: "Generate"  },
+  { href: "/history",       icon: History,          label: "History"   },
 ];
 
 const bottomItems = [
-  { href: "/billing", icon: CreditCard, label: "Billing" },
-  { href: "/settings", icon: Settings, label: "Settings" },
+  { href: "/billing",  icon: CreditCard, label: "Billing"  },
+  { href: "/settings", icon: Settings,   label: "Settings" },
 ];
 
 export function DashboardSidebar() {
@@ -44,7 +85,7 @@ export function DashboardSidebar() {
   return (
     <aside
       className={cn(
-        "hidden lg:flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 shrink-0",
+        "hidden lg:flex flex-col border-r border-border/50 bg-card/30 backdrop-blur-sm transition-all duration-300 shrink-0 relative",
         collapsed ? "w-16" : "w-64"
       )}
     >
@@ -107,9 +148,11 @@ export function DashboardSidebar() {
           );
         })}
 
-        <div className={cn("flex items-center gap-3 px-3 py-2", collapsed && "justify-center px-2")}>
+        <SignOutBtn collapsed={collapsed} />
+
+        <div className={cn("flex items-center gap-3 px-3 py-2 mt-1 border-t border-border/20 pt-3", collapsed && "justify-center px-2")}>
           <UserAvatar />
-          {!collapsed && <span className="text-sm font-medium truncate">Account</span>}
+          {!collapsed && <span className="text-sm text-muted-foreground truncate">Account</span>}
         </div>
       </div>
 
