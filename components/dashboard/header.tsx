@@ -2,15 +2,16 @@
 
 import { Bell, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useUser } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 
-function ClerkGreeting() {
-  const { user } = useUser();
-  return <>{user?.firstName || "there"}</>;
-}
+// useUser/useSession cannot run during SSR — load only on the client
+const ClerkGreeting = dynamic(
+  () => import("@/components/dashboard/clerk-greeting").then((m) => m.ClerkGreeting),
+  { ssr: false, loading: () => <>there</> }
+);
 
 export function DashboardHeader() {
   const { theme, setTheme } = useTheme();
