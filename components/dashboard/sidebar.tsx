@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -10,6 +11,12 @@ import {
   Settings, ChevronLeft, ChevronRight, History, LogOut
 } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
+
+// Load with ssr:false — useClerk() throws during static prerendering without ClerkProvider
+const ClerkUserButtonDynamic = dynamic(
+  () => import("@/components/dashboard/clerk-user-button").then((m) => ({ default: m.ClerkUserButton })),
+  { ssr: false, loading: () => <div className="h-8 w-8 rounded-full bg-muted animate-pulse shrink-0" /> }
+);
 
 // Strip the Clerk userId or demo_user segment from the end of the path
 function stripUserId(path: string): string {
@@ -24,9 +31,7 @@ function UserAvatar({ collapsed }: { collapsed: boolean }) {
       </div>
     );
   }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ClerkUserButton } = require("@/components/dashboard/clerk-user-button");
-  return <ClerkUserButton collapsed={collapsed} />;
+  return <ClerkUserButtonDynamic collapsed={collapsed} />;
 }
 
 function SignOutBtn({ collapsed }: { collapsed: boolean }) {
