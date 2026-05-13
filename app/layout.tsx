@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { LanguageProvider } from "@/components/shared/language-provider";
-import { ClerkAuthProvider } from "@/components/shared/clerk-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -135,7 +135,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 
   if (isValidClerkKey) {
-    return <ClerkAuthProvider>{inner}</ClerkAuthProvider>;
+    return (
+      <ClerkProvider afterSignOutUrl="/sign-in" signInUrl="/sign-in" signUpUrl="/sign-up">
+        {inner}
+      </ClerkProvider>
+    );
   }
   return inner;
 }
