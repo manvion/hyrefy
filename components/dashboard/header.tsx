@@ -2,13 +2,12 @@
 
 import { Bell, Sun, Moon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 
 function ClerkGreeting() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { useUser } = require("@clerk/nextjs");
   const { user } = useUser();
   return <>{user?.firstName || "there"}</>;
 }

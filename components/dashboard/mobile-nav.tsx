@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { SignOutButton as ClerkSignOut } from "@clerk/nextjs";
 import { LayoutDashboard, Upload, Sparkles, History, MoreHorizontal, CreditCard, Settings, LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
@@ -39,8 +40,6 @@ function SignOutButton({ onClose }: { onClose: () => void }) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { SignOutButton: ClerkSignOut } = require("@clerk/nextjs");
   return (
     <ClerkSignOut redirectUrl="/sign-in">
       <button

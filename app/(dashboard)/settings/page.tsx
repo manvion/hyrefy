@@ -1,25 +1,8 @@
 import { Metadata } from "next";
+import { isDemoMode } from "@/lib/utils/demo-mode";
+import { ClerkUserProfileClient } from "@/components/settings/clerk-user-profile";
 
 export const metadata: Metadata = { title: "Settings" };
-
-import { isDemoMode } from "@/lib/utils/demo-mode";
-
-function ClerkUserProfile() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { UserProfile } = require("@clerk/nextjs");
-  return (
-    <UserProfile
-      appearance={{
-        variables: {
-          colorPrimary: "hsl(262.1 83.3% 57.8%)",
-          colorBackground: "hsl(224 71.4% 4.1%)",
-          colorText: "hsl(210 20% 98%)",
-          borderRadius: "0.625rem",
-        },
-      }}
-    />
-  );
-}
 
 export default function SettingsPage() {
   return (
@@ -35,7 +18,7 @@ export default function SettingsPage() {
           </p>
         </div>
       ) : (
-        <ClerkUserProfile />
+        <ClerkUserProfileClient />
       )}
     </div>
   );

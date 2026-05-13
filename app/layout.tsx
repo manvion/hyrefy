@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/shared/theme-provider";
 import { LanguageProvider } from "@/components/shared/language-provider";
+import { ClerkAuthProvider } from "@/components/shared/clerk-provider";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
@@ -114,7 +115,7 @@ const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 const isValidClerkKey = (clerkKey.startsWith("pk_test_") || clerkKey.startsWith("pk_live_")) && clerkKey.length > 20 && !clerkKey.includes("dummy");
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const content = (
+  const inner = (
     <html lang="en" suppressHydrationWarning>
       <head>
         <script
@@ -134,13 +135,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   );
 
   if (isValidClerkKey) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { ClerkProvider } = require("@clerk/nextjs");
-    return (
-      <ClerkProvider afterSignOutUrl="/sign-in" signInUrl="/sign-in" signUpUrl="/sign-up">
-        {content}
-      </ClerkProvider>
-    );
+    return <ClerkAuthProvider>{inner}</ClerkAuthProvider>;
   }
-  return content;
+  return inner;
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { SignOutButton as ClerkSignOutButton } from "@clerk/nextjs";
 import { cn } from "@/lib/utils/cn";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 import {
@@ -53,10 +54,8 @@ function SignOutBtn({ collapsed }: { collapsed: boolean }) {
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { SignOutButton } = require("@clerk/nextjs");
   return (
-    <SignOutButton redirectUrl="/sign-in">
+    <ClerkSignOutButton redirectUrl="/sign-in">
       <button
         className={cn(
           "w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
@@ -67,7 +66,7 @@ function SignOutBtn({ collapsed }: { collapsed: boolean }) {
         <LogOut className="h-4 w-4 shrink-0" />
         {!collapsed && <span>Sign Out</span>}
       </button>
-    </SignOutButton>
+    </ClerkSignOutButton>
   );
 }
 
