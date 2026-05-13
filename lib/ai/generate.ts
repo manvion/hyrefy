@@ -88,7 +88,7 @@ COVER LETTER RULES:
 • ${isFr ? "Français formel et humain — formule de politesse appropriée. Sonne comme une vraie personne, pas une IA." : "Sounds like the candidate wrote it themselves — professional, direct, no AI tells."}
 • Draw only from facts in the resume — never mention experiences or achievements not in the source`;
 
-  const text = await generateText(prompt, { maxTokens: 6000, system });
+  const text = await generateText(prompt, { maxTokens: 6000, system, smart: true });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Failed to parse AI response");
 

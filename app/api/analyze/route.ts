@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { analyzeJobDescription, calculateATSScore } from "@/lib/ai/ats-scorer";
-import type { ParsedResume } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -44,15 +43,15 @@ export async function POST(req: NextRequest) {
 
     if (!resume) return NextResponse.json({ error: "Resume not found" }, { status: 404 });
 
-    if (!resume.parsedData) {
-      return NextResponse.json({ error: "Resume has not been parsed yet" }, { status: 400 });
+    if (!resume.rawText) {
+      return NextResponse.json({ error: "Resume text not found. Please re-upload your resume." }, { status: 400 });
     }
 
     // Analyze job description
     const jobAnalysis = await analyzeJobDescription(jobDescription, jobTitle || "Position");
 
-    // Calculate ATS score
-    const atsScore = await calculateATSScore(resume.parsedData as unknown as ParsedResume, jobAnalysis);
+    // Calculate ATS score using raw resume text
+    const atsScore = await calculateATSScore(resume.rawText, jobAnalysis);
 
     // Create scan record
     const scan = await db.resumeScan.create({

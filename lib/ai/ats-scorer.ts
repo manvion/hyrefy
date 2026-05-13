@@ -1,10 +1,37 @@
 import { generateText } from "./client";
-import type { ATSScore, ParsedResume, JobAnalysis } from "@/types";
+
+export interface JobAnalysis {
+  title: string;
+  requiredSkills: string[];
+  preferredSkills: string[];
+  keywords: string[];
+  experienceLevel: string;
+  industryTerms: string[];
+  responsibilities: string[];
+}
+
+export interface ATSScore {
+  overall: number;
+  keyword: number;
+  formatting: number;
+  experience: number;
+  breakdown: {
+    keywordDensity: number;
+    skillsMatch: number;
+    experienceRelevance: number;
+    educationMatch: number;
+    formattingClarity: number;
+    actionVerbs: number;
+  };
+  suggestions: string[];
+  missingKeywords: string[];
+  matchedKeywords: string[];
+  improvementAreas: { area: string; priority: string; suggestion: string; impact: string }[];
+}
 
 export async function analyzeJobDescription(jobDescription: string, jobTitle: string): Promise<JobAnalysis> {
-  const prompt = `Analyze this job description and extract structured requirements.
+  const prompt = `Extract structured requirements from this job description. Return ONLY valid JSON, no markdown.
 
-Return a JSON object:
 {
   "title": "${jobTitle}",
   "requiredSkills": ["skill1", "skill2"],
@@ -15,23 +42,21 @@ Return a JSON object:
   "responsibilities": ["responsibility1", "responsibility2"]
 }
 
-Be comprehensive with keywords - include technologies, tools, methodologies, soft skills, industry terms.
-Return ONLY valid JSON.
-
 JOB TITLE: ${jobTitle}
 JOB DESCRIPTION: ${jobDescription}`;
 
-  const text = await generateText(prompt, { maxTokens: 2048 });
+  const text = await generateText(prompt, { maxTokens: 1500 });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Failed to parse job analysis");
   return JSON.parse(jsonMatch[0]);
 }
 
 export async function calculateATSScore(
-  resume: ParsedResume,
+  resumeRawText: string,
   jobAnalysis: JobAnalysis
 ): Promise<ATSScore> {
-  const resumeText = resume.rawText.toLowerCase();
+  const resumeText = resumeRawText.toLowerCase();
+
   const allJobKeywords = [
     ...jobAnalysis.keywords,
     ...jobAnalysis.requiredSkills,
@@ -41,74 +66,62 @@ export async function calculateATSScore(
 
   const matchedKeywords: string[] = [];
   const missingKeywords: string[] = [];
-
   for (const kw of allJobKeywords) {
-    if (resumeText.includes(kw.toLowerCase())) {
-      matchedKeywords.push(kw);
-    } else {
-      missingKeywords.push(kw);
-    }
+    (resumeText.includes(kw) ? matchedKeywords : missingKeywords).push(kw);
   }
 
   const keywordScore = allJobKeywords.length > 0
     ? Math.round((matchedKeywords.length / allJobKeywords.length) * 100)
     : 50;
 
-  const actionVerbs = ["led", "built", "designed", "developed", "implemented", "improved",
-    "managed", "created", "increased", "reduced", "launched", "achieved", "delivered",
-    "optimized", "architected", "scaled", "automated", "mentored"];
+  const actionVerbs = [
+    "led","built","designed","developed","implemented","improved",
+    "managed","created","increased","reduced","launched","achieved",
+    "delivered","optimized","architected","scaled","automated","mentored",
+    "coordinated","executed","deployed","analyzed","streamlined","established",
+  ];
   const verbCount = actionVerbs.filter((v) => resumeText.includes(v)).length;
-  const formattingScore = Math.min(100, Math.round(
-    (resume.experience.length > 0 ? 25 : 0) +
-    (resume.skills.length > 3 ? 20 : 10) +
-    (resume.education.length > 0 ? 15 : 0) +
-    (resume.summary ? 15 : 0) +
-    Math.min(25, verbCount * 3)
-  ));
 
-  const requiredSkillsMatched = jobAnalysis.requiredSkills.filter((s) =>
+  // Formatting score based on presence of key resume sections
+  const hasExperience = /experience|employment|work history/i.test(resumeRawText);
+  const hasEducation = /education|degree|university|college|bachelor|master|diploma/i.test(resumeRawText);
+  const hasSummary = /summary|objective|profile|about/i.test(resumeRawText);
+  const hasSkills = /skills|technologies|tools|proficiencies/i.test(resumeRawText);
+  const formattingScore = Math.min(100,
+    (hasExperience ? 25 : 0) +
+    (hasSkills ? 20 : 10) +
+    (hasEducation ? 15 : 0) +
+    (hasSummary ? 15 : 0) +
+    Math.min(25, verbCount * 3)
+  );
+
+  const requiredMatched = jobAnalysis.requiredSkills.filter((s) =>
     resumeText.includes(s.toLowerCase())
   ).length;
   const experienceScore = jobAnalysis.requiredSkills.length > 0
-    ? Math.round((requiredSkillsMatched / jobAnalysis.requiredSkills.length) * 100)
+    ? Math.round((requiredMatched / jobAnalysis.requiredSkills.length) * 100)
     : 60;
 
-  const overall = Math.round((keywordScore * 0.4) + (formattingScore * 0.3) + (experienceScore * 0.3));
+  const overall = Math.round(keywordScore * 0.4 + formattingScore * 0.3 + experienceScore * 0.3);
 
-  const prompt = `You are an ATS expert. Analyze this resume against the job requirements and provide specific improvements.
+  const prompt = `You are an ATS expert. Give 5 specific, actionable improvements for this resume.
 
-RESUME SKILLS: ${resume.skills.join(", ")}
-RESUME EXPERIENCE: ${resume.experience.map((e) => `${e.title} at ${e.company}`).join("; ")}
-JOB REQUIRED SKILLS: ${jobAnalysis.requiredSkills.join(", ")}
-JOB KEYWORDS: ${jobAnalysis.keywords.join(", ")}
-KEYWORD MATCH: ${keywordScore}%
 MISSING KEYWORDS: ${missingKeywords.slice(0, 15).join(", ")}
+MATCHED KEYWORDS: ${matchedKeywords.slice(0, 10).join(", ")}
+REQUIRED SKILLS: ${jobAnalysis.requiredSkills.join(", ")}
+KEYWORD SCORE: ${keywordScore}%
 
-Return a JSON object:
+Return ONLY valid JSON:
 {
-  "suggestions": [
-    "Specific actionable suggestion 1",
-    "Specific actionable suggestion 2",
-    "Specific actionable suggestion 3",
-    "Specific actionable suggestion 4",
-    "Specific actionable suggestion 5"
-  ],
+  "suggestions": ["suggestion1","suggestion2","suggestion3","suggestion4","suggestion5"],
   "improvementAreas": [
-    {
-      "area": "Keyword Optimization",
-      "priority": "high",
-      "suggestion": "Add these specific keywords to your resume",
-      "impact": "Could increase ATS score by 15-20 points"
-    }
+    {"area":"Keyword Optimization","priority":"high","suggestion":"Add these keywords","impact":"Could increase score 10-15 points"}
   ]
-}
+}`;
 
-Return ONLY valid JSON.`;
-
-  const text = await generateText(prompt, { maxTokens: 2048 });
+  const text = await generateText(prompt, { maxTokens: 1000 });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Failed to parse ATS suggestions");
-  const aiAnalysis = JSON.parse(jsonMatch[0]);
+  const aiAnalysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { suggestions: [], improvementAreas: [] };
 
   return {
     overall,
@@ -117,11 +130,9 @@ Return ONLY valid JSON.`;
     experience: experienceScore,
     breakdown: {
       keywordDensity: keywordScore,
-      skillsMatch: Math.round((resume.skills.filter((s) =>
-        jobAnalysis.requiredSkills.map((r) => r.toLowerCase()).includes(s.toLowerCase())
-      ).length / Math.max(jobAnalysis.requiredSkills.length, 1)) * 100),
+      skillsMatch: Math.round((requiredMatched / Math.max(jobAnalysis.requiredSkills.length, 1)) * 100),
       experienceRelevance: experienceScore,
-      educationMatch: resume.education.length > 0 ? 80 : 40,
+      educationMatch: hasEducation ? 80 : 40,
       formattingClarity: formattingScore,
       actionVerbs: Math.min(100, verbCount * 10),
     },
