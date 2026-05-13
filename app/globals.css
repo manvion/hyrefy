@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+/* tailwindcss-animate replacement — minimal keyframes for Radix UI components */
+@keyframes fadeIn   { from { opacity: 0 } to { opacity: 1 } }
+@keyframes fadeOut  { from { opacity: 1 } to { opacity: 0 } }
+@keyframes zoomIn   { from { transform: scale(0.95) } to { transform: scale(1) } }
+@keyframes zoomOut  { from { transform: scale(1) } to { transform: scale(0.95) } }
+@keyframes slideInFromTop    { from { transform: translateY(-4px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes slideInFromBottom { from { transform: translateY(4px); opacity: 0 } to { transform: translateY(0); opacity: 1 } }
+@keyframes slideInFromLeft   { from { transform: translateX(-50%) translateY(-48%); opacity: 0 } to { transform: translateX(-50%) translateY(-50%); opacity: 1 } }
+@keyframes slideOutToRight   { from { transform: translateX(0); opacity: 1 } to { transform: translateX(100%); opacity: 0 } }
+
+[data-state=open][data-animate-in],
+.data-\[state\=open\]\:animate-in[data-state=open] {
+  animation: fadeIn 150ms ease;
+}
+[data-state=closed][data-animate-out],
+.data-\[state\=closed\]\:animate-out[data-state=closed] {
+  animation: fadeOut 150ms ease;
+}
+.data-\[state\=open\]\:fade-in-0[data-state=open]   { animation: fadeIn 150ms ease; }
+.data-\[state\=closed\]\:fade-out-0[data-state=closed] { animation: fadeOut 150ms ease; }
+.data-\[state\=open\]\:zoom-in-95[data-state=open]   { animation: zoomIn 150ms ease; }
+.data-\[state\=closed\]\:zoom-out-95[data-state=closed] { animation: zoomOut 150ms ease; }
+.data-\[state\=open\]\:slide-in-from-top-full[data-state=open]    { animation: slideInFromTop 150ms ease; }
+.data-\[state\=open\]\:slide-in-from-bottom-full[data-state=open] { animation: slideInFromBottom 150ms ease; }
+.data-\[swipe\=end\]\:animate-out[data-swipe=end] { animation: slideOutToRight 200ms ease; }
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+:root {
+  --radius: 0.5rem;
+  /* Light mode — LinkedIn-inspired warm professional */
+  --background: 40 14% 95%;       /* #F3F2EF LinkedIn warm off-white */
+  --foreground: 0 0% 10%;         /* Near black */
+  --card: 0 0% 100%;              /* Pure white cards */
+  --card-foreground: 0 0% 10%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  --primary: 211 89% 40%;         /* #0A66C2 LinkedIn blue */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 40 10% 91%;        /* Warm light gray */
+  --secondary-foreground: 0 0% 15%;
+  --muted: 40 10% 92%;
+  --muted-foreground: 0 0% 44%;   /* LinkedIn secondary text */
+  --accent: 211 89% 95%;          /* Very light blue for hover */
+  --accent-foreground: 211 89% 35%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 8% 85%;            /* LinkedIn card border */
+  --input: 40 8% 91%;
+  --ring: 211 89% 40%;
+  --chart-1: 211 89% 40%;
+  --chart-2: 142 71% 45%;
+  --chart-3: 38 92% 50%;
+  --chart-4: 272 72% 55%;
+  --chart-5: 0 72% 55%;
+}
+
+.dark {
+  /* Dark mode — LinkedIn dark #1B1F23 inspired */
+  --background: 216 14% 11%;      /* #1B1F23 LinkedIn dark background */
+  --foreground: 210 17% 95%;      /* Near-white text */
+  --card: 216 12% 15%;            /* Slightly elevated card surface */
+  --card-foreground: 210 17% 95%;
+  --popover: 216 12% 16%;
+  --popover-foreground: 210 17% 95%;
+  --primary: 212 86% 68%;         /* #70B5F9 LinkedIn light blue (dark mode) */
+  --primary-foreground: 216 14% 9%;
+  --secondary: 216 11% 20%;
+  --secondary-foreground: 210 15% 88%;
+  --muted: 216 11% 18%;
+  --muted-foreground: 217 10% 60%;
+  --accent: 216 11% 20%;
+  --accent-foreground: 210 15% 88%;
+  --destructive: 0 63% 45%;
+  --destructive-foreground: 210 20% 98%;
+  --border: 216 11% 21%;          /* Subtle LinkedIn dark border */
+  --input: 216 11% 14%;
+  --ring: 212 86% 68%;
+  --chart-1: 212 86% 68%;
+  --chart-2: 160 60% 50%;
+  --chart-3: 38 90% 58%;
+  --chart-4: 272 65% 65%;
+  --chart-5: 0 70% 60%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Gradient utilities — LinkedIn blue */
+.gradient-primary {
+  background: linear-gradient(135deg, hsl(211 89% 42%) 0%, hsl(211 89% 30%) 100%);
+}
+.dark .gradient-primary {
+  background: linear-gradient(135deg, hsl(212 86% 65%) 0%, hsl(212 86% 50%) 100%);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, hsl(211 89% 42%) 0%, hsl(200 90% 55%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.dark .gradient-text {
+  background: linear-gradient(135deg, hsl(212 86% 72%) 0%, hsl(200 90% 72%) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 40px hsl(211 89% 40% / 0.3);
+}
+.dark .glow-primary {
+  box-shadow: 0 0 40px hsl(212 86% 68% / 0.25);
+}
+
+/* Animation utilities */
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Score ring animations */
+.score-ring {
+  transition: stroke-dashoffset 1s ease-in-out;
+}
