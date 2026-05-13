@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 
-const isDemoMode =
-  process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
-  (process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "").includes("dummy");
+const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+const isValidClerkKey =
+  (clerkKey.startsWith("pk_test_") || clerkKey.startsWith("pk_live_")) &&
+  clerkKey.length > 20 &&
+  !clerkKey.includes("dummy");
+const isDemoMode = process.env.NEXT_PUBLIC_DEMO_MODE === "true" || !isValidClerkKey;
 
 function DemoSignIn() {
   return (
