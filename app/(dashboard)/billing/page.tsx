@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Check, Zap, CreditCard, ExternalLink, Loader2, CheckCircle } from "lucide-react";
 import { toast } from "@/components/ui/toaster";
+import type { CountryPrice } from "@/lib/utils/pricing";
 
 const PREMIUM_FEATURES = [
   "Unlimited resume & cover letter generations",
@@ -34,15 +35,19 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
+  const [pricing, setPricing] = useState<CountryPrice | null>(null);
 
   useEffect(() => {
     fetch("/api/user/subscription").then((r) => r.json()).then(setSubscription).catch(() => {});
+    fetch("/api/user/geo").then((r) => r.json()).then((d) => setPricing(d.pricing)).catch(() => {});
     if (success) {
       toast({ title: "Welcome to Premium!", description: "Your subscription is now active.", variant: "success" });
     }
   }, [success]);
 
   const isPremium = subscription?.status === "PREMIUM";
+  const displayPrice = pricing?.displayAmount ?? "$19";
+  const displayLabel = pricing?.label ?? "USD";
 
   const handleUpgrade = async () => {
     setLoading(true);
@@ -50,9 +55,9 @@ export default function BillingPage() {
       const res = await fetch("/api/stripe/checkout", { method: "POST" });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-      else throw new Error(data.error);
-    } catch (err) {
-      toast({ title: "Error", description: "Failed to start checkout", variant: "destructive" });
+      else throw new Error(data.error || "Checkout failed");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to start checkout", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -64,8 +69,9 @@ export default function BillingPage() {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-    } catch {
-      toast({ title: "Error", description: "Failed to open portal", variant: "destructive" });
+      else throw new Error(data.error || "Portal error");
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to open portal", variant: "destructive" });
     } finally {
       setPortalLoading(false);
     }
@@ -117,12 +123,12 @@ export default function BillingPage() {
               Next billing date: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
             </p>
           )}
-          {isPremium ? (
+          {isPremium && (
             <Button onClick={handlePortal} disabled={portalLoading} variant="outline">
               {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
               Manage Subscription
             </Button>
-          ) : null}
+          )}
         </CardContent>
       </Card>
 
@@ -155,11 +161,17 @@ export default function BillingPage() {
               <CardDescription>Everything you need to land the job</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-3xl font-bold mb-4">$19<span className="text-sm text-muted-foreground font-normal">/mo</span></p>
+              <div className="mb-4">
+                <p className="text-3xl font-bold">
+                  {displayPrice}
+                  <span className="text-sm text-muted-foreground font-normal">/mo</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Billed in {displayLabel} · Cancel anytime</p>
+              </div>
               <ul className="space-y-2 text-sm mb-6">
                 {PREMIUM_FEATURES.map((f) => (
                   <li key={f} className="flex items-center gap-2">
-                    <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
+                    <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
                       <Check className="h-2.5 w-2.5 text-primary" />
                     </div>
                     {f}

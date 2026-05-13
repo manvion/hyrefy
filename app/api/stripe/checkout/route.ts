@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
-import { stripe, PLANS } from "@/lib/utils/stripe";
+import { stripe } from "@/lib/utils/stripe";
+import { getPricing } from "@/lib/utils/pricing";
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,6 +21,8 @@ export async function POST(req: NextRequest) {
     }
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
+    const country = req.headers.get("x-vercel-ip-country") || req.headers.get("cf-ipcountry") || "US";
+    const pricing = getPricing(country);
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -27,7 +30,15 @@ export async function POST(req: NextRequest) {
       customer_email: user.email || undefined,
       line_items: [
         {
-          price: PLANS.PREMIUM.priceId,
+          price_data: {
+            currency: pricing.currency,
+            product_data: {
+              name: "Hyrefy Premium",
+              description: "Unlimited resume & cover letter generations, all 9 countries, PDF downloads, 6-month history",
+            },
+            unit_amount: pricing.amount,
+            recurring: { interval: "month" },
+          },
           quantity: 1,
         },
       ],
