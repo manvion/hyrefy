@@ -8,6 +8,10 @@ import { cn } from "@/lib/utils/cn";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 
+function stripUserId(path: string): string {
+  return path.replace(/\/(user_\w+|demo_user)$/, "");
+}
+
 const navItems = [
   { href: "/dashboard",     icon: LayoutDashboard, label: "Home"     },
   { href: "/resume/upload", icon: Upload,           label: "Resume"   },
@@ -59,25 +63,32 @@ export function MobileTopBar() {
   );
 }
 
-export function MobileNav() {
+interface Props {
+  userId: string;
+}
+
+export function MobileNav({ userId }: Props) {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const isMoreActive = pathname === "/billing" || pathname === "/settings";
+  const cleanPath = stripUserId(pathname);
+  const isMoreActive = cleanPath === "/billing" || cleanPath === "/settings";
 
   return (
     <>
       {/* Bottom nav bar */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-md" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background/95 backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      >
         <div className="flex items-stretch justify-around px-1 py-1">
           {navItems.map((item) => {
             const isActive =
-              pathname === item.href ||
-              (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              cleanPath === item.href ||
+              (item.href !== "/dashboard" && cleanPath.startsWith(item.href));
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={`${item.href}/${userId}`}
                 className={cn(
                   "relative flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all min-w-0 flex-1",
                   isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
@@ -125,7 +136,6 @@ export function MobileNav() {
         )}
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        {/* Handle + header */}
         <div className="flex items-center justify-between px-4 pt-4 pb-2">
           <div className="flex items-center gap-2">
             <HyreLogo size={24} />
@@ -140,20 +150,17 @@ export function MobileNav() {
         </div>
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-border" />
 
-        {/* Menu items */}
         <div className="px-3 pb-4 space-y-1">
           {moreItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = cleanPath === item.href;
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={`${item.href}/${userId}`}
                 onClick={() => setDrawerOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-accent"
+                  isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
                 )}
               >
                 <item.icon className="h-5 w-5 shrink-0" />

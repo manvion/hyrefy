@@ -3,11 +3,14 @@ export const dynamic = "force-dynamic";
 import { DashboardSidebar } from "@/components/dashboard/sidebar";
 import { DashboardHeader } from "@/components/dashboard/header";
 import { MobileNav } from "@/components/dashboard/mobile-nav";
+import { getAuthUserId } from "@/lib/utils/auth";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const userId = (await getAuthUserId()) ?? "demo_user";
+
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      <DashboardSidebar />
+      <DashboardSidebar userId={userId} />
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
         <DashboardHeader />
         <main className="flex-1 overflow-y-auto">
@@ -16,7 +19,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
-      <MobileNav />
+      <MobileNav userId={userId} />
     </div>
   );
 }

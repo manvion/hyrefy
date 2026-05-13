@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 
+// Strip the Clerk userId or demo_user segment from the end of the path
+function stripUserId(path: string): string {
+  return path.replace(/\/(user_\w+|demo_user)$/, "");
+}
+
 function UserAvatar() {
   if (isDemoMode) {
     return (
@@ -78,9 +83,14 @@ const bottomItems = [
   { href: "/settings", icon: Settings,   label: "Settings" },
 ];
 
-export function DashboardSidebar() {
+interface Props {
+  userId: string;
+}
+
+export function DashboardSidebar({ userId }: Props) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const cleanPath = stripUserId(pathname);
 
   return (
     <aside
@@ -91,7 +101,7 @@ export function DashboardSidebar() {
     >
       {/* Logo */}
       <div className={cn("flex h-16 items-center border-b border-border/30 px-4", collapsed ? "justify-center" : "gap-3")}>
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+        <Link href={`/dashboard/${userId}`} className="flex items-center gap-2.5 group">
           <HyreLogo size={32} className="shrink-0" />
           {!collapsed && (
             <span className="text-base font-bold tracking-tight">Hyrefy</span>
@@ -103,11 +113,11 @@ export function DashboardSidebar() {
       <nav className="flex-1 overflow-y-auto py-4 px-2">
         <div className="space-y-1">
           {navItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
+            const isActive = cleanPath === item.href || cleanPath.startsWith(item.href + "/");
             return (
               <Link
                 key={item.href}
-                href={item.href}
+                href={`${item.href}/${userId}`}
                 className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                   isActive
@@ -128,11 +138,11 @@ export function DashboardSidebar() {
       {/* Bottom */}
       <div className="border-t border-border/30 py-4 px-2 space-y-1">
         {bottomItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = cleanPath === item.href;
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={`${item.href}/${userId}`}
               className={cn(
                 "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                 isActive
