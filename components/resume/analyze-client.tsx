@@ -1,25 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "@/components/ui/toaster";
 import {
-  Loader2, Search, Target, AlertTriangle,
-  CheckCircle, ChevronRight, Wand2, ArrowRight, TrendingUp, Mail, Zap
+  Loader2, Search, Target, AlertTriangle, CheckCircle,
+  FileText, ClipboardPaste, Zap, Crown, ChevronRight, TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import type { ATSScore, JobAnalysis } from "@/types";
-import { CoverLetterClient } from "@/components/resume/cover-letter-client";
 
 interface ScanResult {
   scanId: string;
@@ -27,26 +21,28 @@ interface ScanResult {
   jobAnalysis: JobAnalysis;
 }
 
-function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
-  const radius = (size - 16) / 2;
+interface MasterResume {
+  id: string;
+  fileName: string;
+  isMaster?: boolean;
+  rawText?: string;
+}
+
+function ScoreRing({ score }: { score: number }) {
+  const size = 120;
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const dash = (score / 100) * circumference;
-
   const color =
-    score >= 80 ? "hsl(143, 71%, 45%)" : score >= 60 ? "hsl(43, 96%, 56%)" : "hsl(0, 72%, 51%)";
+    score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
 
   return (
     <div className="relative" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke="hsl(var(--muted))" strokeWidth="8"
-        />
+        <circle cx={60} cy={60} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
         <motion.circle
-          cx={size / 2} cy={size / 2} r={radius}
-          fill="none" stroke={color} strokeWidth="8"
-          strokeLinecap="round"
-          strokeDasharray={`${dash} ${circumference}`}
+          cx={60} cy={60} r={radius}
+          fill="none" stroke={color} strokeWidth="10" strokeLinecap="round"
           initial={{ strokeDasharray: `0 ${circumference}` }}
           animate={{ strokeDasharray: `${dash} ${circumference}` }}
           transition={{ duration: 1.2, ease: "easeOut" }}
@@ -55,9 +51,9 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
           className="text-3xl font-bold"
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.5 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
         >
           {score}
         </motion.span>
@@ -67,36 +63,33 @@ function ScoreRing({ score, size = 120 }: { score: number; size?: number }) {
   );
 }
 
-function ScoreBar({ label, value, color }: { label: string; value: number; color: string }) {
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-sm">
-        <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium">{value}%</span>
-      </div>
-      <Progress value={value} className="h-2" indicatorClassName={color} />
-    </div>
-  );
-}
-
 export function AnalyzeClient() {
-  const searchParams = useSearchParams();
-  const initialResumeId = searchParams.get("resumeId") || "";
-
-  const [resumeId, setResumeId] = useState(initialResumeId);
+  const [inputMode, setInputMode] = useState<"master" | "paste">("master");
+  const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
+  const [pastedText, setPastedText] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
-  const [resumes, setResumes] = useState<{ id: string; fileName: string }[]>([]);
   const [scanLimit, setScanLimit] = useState<{ used: number; limit: number; isPremium: boolean } | null>(null);
+  const [loadingResume, setLoadingResume] = useState(true);
 
   useEffect(() => {
+    // Fetch master resume
+    setLoadingResume(true);
     fetch("/api/resume/list")
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setResumes(data); })
-      .catch(() => {});
+      .then((data: MasterResume[]) => {
+        const master = Array.isArray(data)
+          ? (data.find((r) => r.isMaster) ?? data[0] ?? null)
+          : null;
+        setMasterResume(master);
+        if (!master) setInputMode("paste");
+      })
+      .catch(() => setInputMode("paste"))
+      .finally(() => setLoadingResume(false));
 
+    // Fetch usage
     fetch("/api/user/subscription")
       .then((r) => r.json())
       .then((data) => {
@@ -107,25 +100,40 @@ export function AnalyzeClient() {
       .catch(() => {});
   }, []);
 
+  const atLimit = !!scanLimit && !scanLimit.isPremium && scanLimit.used >= scanLimit.limit;
+
   const handleAnalyze = async () => {
-    if (!resumeId || !jobDescription.trim()) {
-      toast({ title: "Missing fields", description: "Please select a resume and enter a job description", variant: "destructive" });
+    if (!jobDescription.trim()) {
+      toast({ title: "Missing job description", description: "Paste the job description to analyze", variant: "destructive" });
+      return;
+    }
+    if (inputMode === "paste" && pastedText.trim().length < 50) {
+      toast({ title: "Resume text too short", description: "Paste your full resume text for accurate results", variant: "destructive" });
+      return;
+    }
+    if (inputMode === "master" && !masterResume) {
+      toast({ title: "No master resume", description: "Upload your master resume first or switch to paste mode", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
+      const body: Record<string, string> = { jobDescription };
+      if (jobTitle.trim()) body.jobTitle = jobTitle.trim();
+      if (inputMode === "master" && masterResume) body.resumeId = masterResume.id;
+      else body.resumeText = pastedText.trim();
+
       const res = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeId, jobTitle, jobDescription }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Analysis failed");
 
       setResult(data);
-      toast({ title: "Analysis complete!", description: `Your ATS score: ${data.atsScore.overall}/100`, variant: "success" });
+      toast({ title: "Analysis complete!", description: `ATS score: ${data.atsScore.overall}/100`, variant: "success" });
     } catch (err) {
       toast({ title: "Analysis failed", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });
     } finally {
@@ -134,257 +142,255 @@ export function AnalyzeClient() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {/* Input panel */}
-      <div className="space-y-5">
-        <Card className="border-border/50 bg-card/30">
-          <CardHeader>
-            <CardTitle className="text-base">Resume & Job Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Resume selector */}
-            <div className="space-y-2">
-              <Label>Select Resume</Label>
-              {resumes.length > 0 ? (
-                <div className="space-y-2">
-                  {resumes.map((r) => (
-                    <button
-                      key={r.id}
-                      onClick={() => setResumeId(r.id)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg border text-sm transition-all duration-150 ${
-                        resumeId === r.id
-                          ? "border-primary/50 bg-primary/5 text-foreground"
-                          : "border-border hover:border-border/80 hover:bg-accent text-muted-foreground"
-                      }`}
-                    >
-                      {r.fileName}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed border-border p-4 text-center">
-                  <p className="text-sm text-muted-foreground mb-2">No resumes uploaded yet</p>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/resume/upload">Upload Resume</Link>
-                  </Button>
-                </div>
-              )}
-              {!resumeId && (
-                <Input
-                  placeholder="Or enter resume ID directly..."
-                  value={resumeId}
-                  onChange={(e) => setResumeId(e.target.value)}
-                  className="mt-2"
-                />
-              )}
-            </div>
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-6xl">
 
-            <div className="space-y-2">
-              <Label htmlFor="jobTitle">Job Title (optional)</Label>
-              <Input
-                id="jobTitle"
-                placeholder="e.g. Senior Software Engineer"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-              />
-            </div>
+      {/* Input panel — 2 cols */}
+      <div className="lg:col-span-2 space-y-4">
 
-            <div className="space-y-2">
-              <Label htmlFor="jobDesc">Job Description *</Label>
-              <Textarea
-                id="jobDesc"
-                placeholder="Paste the full job description here..."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                className="min-h-[200px] resize-none"
-              />
-              <p className="text-xs text-muted-foreground">
-                {jobDescription.length} characters · Include full JD for best results
-              </p>
-            </div>
-
-            {/* Free tier scan limit */}
-            {scanLimit && !scanLimit.isPremium && (
-              <div className={cn(
-                "rounded-xl border px-4 py-3 flex items-center gap-3",
-                scanLimit.used >= scanLimit.limit
-                  ? "border-destructive/30 bg-destructive/5"
-                  : scanLimit.used >= scanLimit.limit - 1
-                  ? "border-amber-500/30 bg-amber-500/5"
-                  : "border-border/40 bg-muted/10"
-              )}>
-                <Zap className={cn("h-4 w-4 shrink-0", scanLimit.used >= scanLimit.limit ? "text-destructive" : "text-amber-400")} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold">
-                    {scanLimit.used >= scanLimit.limit
-                      ? "Monthly scan limit reached"
-                      : `${scanLimit.limit - scanLimit.used} scan${scanLimit.limit - scanLimit.used !== 1 ? "s" : ""} remaining this month`}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {scanLimit.used} / {scanLimit.limit} free scans used
-                    {scanLimit.used >= scanLimit.limit && " · Upgrade for unlimited scans"}
-                  </p>
-                </div>
-                {scanLimit.used >= scanLimit.limit && (
-                  <Link href="/billing">
-                    <Button size="sm" variant="gradient" className="h-7 text-xs shrink-0">Upgrade</Button>
-                  </Link>
-                )}
-              </div>
+        {/* Input mode toggle */}
+        <div className="rounded-xl border border-border/40 bg-card/30 p-1 flex gap-1">
+          <button
+            onClick={() => setInputMode("master")}
+            disabled={!masterResume && !loadingResume}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+              inputMode === "master"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
             )}
+          >
+            <FileText className="h-3.5 w-3.5" />
+            Use My Resume
+          </button>
+          <button
+            onClick={() => setInputMode("paste")}
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
+              inputMode === "paste"
+                ? "bg-background shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <ClipboardPaste className="h-3.5 w-3.5" />
+            Paste Text
+          </button>
+        </div>
 
-            <Button
-              onClick={handleAnalyze}
-              disabled={loading || !resumeId || !jobDescription.trim() || (!!scanLimit && !scanLimit.isPremium && scanLimit.used >= scanLimit.limit)}
-              variant="gradient"
-              size="lg"
-              className="w-full"
-            >
-              {loading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing with AI...</>
-              ) : (
-                <><Search className="mr-2 h-4 w-4" />Analyze ATS Compatibility</>
-              )}
-            </Button>
-          </CardContent>
-        </Card>
+        {/* Resume source display */}
+        <div className="rounded-xl border border-border/40 bg-card/30 p-4">
+          {inputMode === "master" ? (
+            loadingResume ? (
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-muted animate-pulse" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-32 bg-muted animate-pulse rounded" />
+                  <div className="h-2.5 w-20 bg-muted animate-pulse rounded" />
+                </div>
+              </div>
+            ) : masterResume ? (
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <FileText className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{masterResume.fileName}</p>
+                  <p className="text-xs text-muted-foreground">Master Resume</p>
+                </div>
+                <Link href="/resume/upload">
+                  <Button variant="ghost" size="sm" className="h-7 text-xs">Change</Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-center py-2">
+                <p className="text-sm text-muted-foreground mb-3">No master resume uploaded yet</p>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/resume/upload"><FileText className="mr-1.5 h-3.5 w-3.5" />Upload Resume</Link>
+                </Button>
+              </div>
+            )
+          ) : (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Paste your resume text</p>
+              <Textarea
+                placeholder="Paste your complete resume text here..."
+                value={pastedText}
+                onChange={(e) => setPastedText(e.target.value)}
+                className="min-h-[140px] resize-none text-sm"
+              />
+              <p className="text-xs text-muted-foreground">{pastedText.length} chars</p>
+            </div>
+          )}
+        </div>
+
+        {/* Job description */}
+        <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Details</p>
+          <input
+            type="text"
+            placeholder="Job title (optional)"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+          />
+          <Textarea
+            placeholder="Paste the full job description here..."
+            value={jobDescription}
+            onChange={(e) => setJobDescription(e.target.value)}
+            className="min-h-[180px] resize-none text-sm"
+          />
+          <p className="text-xs text-muted-foreground">{jobDescription.length} chars · Full JD gives best results</p>
+        </div>
+
+        {/* Usage indicator */}
+        {scanLimit && !scanLimit.isPremium && (
+          <div className={cn(
+            "rounded-xl border px-4 py-3 flex items-center gap-3",
+            atLimit ? "border-destructive/30 bg-destructive/5" : "border-border/40 bg-card/20"
+          )}>
+            <Zap className={cn("h-4 w-4 shrink-0", atLimit ? "text-destructive" : "text-amber-400")} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold">
+                {atLimit ? "Monthly scan limit reached" : `${scanLimit.limit - scanLimit.used} scan${scanLimit.limit - scanLimit.used !== 1 ? "s" : ""} remaining`}
+              </p>
+              <p className="text-xs text-muted-foreground">{scanLimit.used} / {scanLimit.limit} used this month</p>
+            </div>
+            {atLimit && (
+              <Button asChild size="sm" variant="gradient" className="h-7 text-xs gap-1 shrink-0">
+                <Link href="/billing"><Crown className="h-3 w-3" />Upgrade</Link>
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Button
+          onClick={handleAnalyze}
+          disabled={loading || atLimit || (!masterResume && inputMode === "master") || (inputMode === "paste" && pastedText.trim().length < 50) || !jobDescription.trim()}
+          variant="gradient"
+          size="lg"
+          className="w-full"
+        >
+          {loading
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing...</>
+            : <><Search className="mr-2 h-4 w-4" />Check ATS Score</>}
+        </Button>
       </div>
 
-      {/* Results panel */}
-      <AnimatePresence mode="wait">
-        {result ? (
-          <motion.div
-            key="results"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-4"
-          >
-            {/* Before/After Score */}
-            {(() => {
-              const potential = Math.min(100, result.atsScore.overall + Math.round((100 - result.atsScore.overall) * 0.65));
-              const gain = potential - result.atsScore.overall;
-              return (
-                <Card className="border-border/50 bg-card/30">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-4 mb-4">
-                      <TrendingUp className="h-4 w-4 text-emerald-400" />
-                      <span className="text-sm font-semibold">ATS Score Potential</span>
-                      {gain > 0 && <Badge variant="success" className="ml-auto text-xs">+{gain} points available</Badge>}
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center rounded-xl border border-border/40 bg-background/30 p-4">
-                        <p className="text-xs text-muted-foreground mb-2">Current Score</p>
-                        <ScoreRing score={result.atsScore.overall} size={80} />
-                        <p className="text-xs text-muted-foreground mt-2">Before optimization</p>
-                      </div>
-                      <div className="text-center rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 relative">
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                          <span className="text-[10px] bg-emerald-500 text-white px-2 py-0.5 rounded-full font-bold">POTENTIAL</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-2">After AI Rewrite</p>
-                        <ScoreRing score={potential} size={80} />
-                        <p className="text-xs text-emerald-400 mt-2 font-medium">With all suggestions</p>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2">
-                      <ScoreBar label="Keyword Match" value={result.atsScore.keyword} color="bg-emerald-500" />
-                      <ScoreBar label="Formatting" value={result.atsScore.formatting} color="bg-blue-500" />
-                      <ScoreBar label="Experience" value={result.atsScore.experience} color="bg-purple-500" />
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })()}
-
-            <Tabs defaultValue="keywords">
-              <TabsList className="w-full">
-                <TabsTrigger value="keywords" className="flex-1">Keywords</TabsTrigger>
-                <TabsTrigger value="suggestions" className="flex-1">Suggestions</TabsTrigger>
-                <TabsTrigger value="missing" className="flex-1">Missing</TabsTrigger>
-                <TabsTrigger value="cover-letter" className="flex-1 flex items-center gap-1">
-                  <Mail className="h-3 w-3" />Cover Letter
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="keywords" className="mt-3">
-                <Card className="border-border/50 bg-card/30">
-                  <CardContent className="p-4 space-y-3">
+      {/* Results panel — 3 cols */}
+      <div className="lg:col-span-3">
+        <AnimatePresence mode="wait">
+          {result ? (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="space-y-4"
+            >
+              {/* Score header */}
+              <div className="rounded-xl border border-border/40 bg-card/30 p-5">
+                <div className="flex items-center gap-6">
+                  <ScoreRing score={result.atsScore.overall} />
+                  <div className="flex-1 space-y-3">
                     <div>
-                      <p className="text-xs font-semibold text-emerald-400 mb-2 flex items-center gap-1.5">
-                        <CheckCircle className="h-3.5 w-3.5" /> Matched ({result.atsScore.matchedKeywords.length})
+                      <p className="text-lg font-bold">
+                        {result.atsScore.overall >= 80 ? "Strong Match" : result.atsScore.overall >= 60 ? "Good Match" : "Needs Work"}
                       </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {result.atsScore.matchedKeywords.map((kw) => (
-                          <Badge key={kw} variant="success" className="text-xs">{kw}</Badge>
-                        ))}
-                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">
+                        {result.jobAnalysis.title || "Position"} compatibility
+                      </p>
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="suggestions" className="mt-3">
-                <Card className="border-border/50 bg-card/30">
-                  <CardContent className="p-4">
-                    <ul className="space-y-3">
-                      {result.atsScore.suggestions.map((s, i) => (
-                        <li key={i} className="flex items-start gap-2.5 text-sm">
-                          <ChevronRight className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          <span className="text-muted-foreground">{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="missing" className="mt-3">
-                <Card className="border-border/50 bg-card/30">
-                  <CardContent className="p-4">
-                    <p className="text-xs text-muted-foreground mb-3">
-                      Add these keywords to improve your ATS score:
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {result.atsScore.missingKeywords.map((kw) => (
-                        <Badge key={kw} variant="warning" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          {kw}
-                        </Badge>
+                    <div className="space-y-1.5">
+                      {[
+                        { label: "Keywords", value: result.atsScore.keyword },
+                        { label: "Formatting", value: result.atsScore.formatting },
+                        { label: "Experience", value: result.atsScore.experience },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="flex items-center gap-2.5">
+                          <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>
+                          <Progress value={value} className="flex-1 h-1.5" />
+                          <span className="text-xs font-medium w-7 text-right">{value}%</span>
+                        </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                  </div>
+                </div>
+              </div>
 
-              <TabsContent value="cover-letter" className="mt-3">
-                <CoverLetterClient resumeId={resumeId} />
-              </TabsContent>
-            </Tabs>
+              {/* Matched keywords */}
+              {result.atsScore.matchedKeywords.length > 0 && (
+                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
+                  <p className="text-xs font-semibold flex items-center gap-1.5 text-emerald-500">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    Matched Keywords ({result.atsScore.matchedKeywords.length})
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.atsScore.matchedKeywords.map((kw) => (
+                      <span key={kw} className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md px-2 py-0.5 font-medium">
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <Button asChild variant="gradient" className="w-full">
-              <Link href={`/rewrite?scanId=${result.scanId}&resumeId=${resumeId}`}>
-                <Wand2 className="mr-2 h-4 w-4" />
-                AI Rewrite to Optimize
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-          </motion.div>
-        ) : (
-          <motion.div
-            key="empty"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="rounded-2xl border border-dashed border-border/50 flex flex-col items-center justify-center p-12 text-center"
-          >
-            <Target className="h-10 w-10 text-muted-foreground mb-4" />
-            <h3 className="text-base font-semibold mb-1">Your ATS score appears here</h3>
-            <p className="text-sm text-muted-foreground">
-              Select a resume and paste a job description to get your compatibility score
-            </p>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {/* Missing keywords */}
+              {result.atsScore.missingKeywords.length > 0 && (
+                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
+                  <p className="text-xs font-semibold flex items-center gap-1.5 text-amber-500">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    Missing Keywords ({result.atsScore.missingKeywords.length})
+                  </p>
+                  <p className="text-xs text-muted-foreground">Add these to your resume to improve your score</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {result.atsScore.missingKeywords.map((kw) => (
+                      <span key={kw} className="text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-md px-2 py-0.5 font-medium">
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Suggestions */}
+              {result.atsScore.suggestions.length > 0 && (
+                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Improvement Suggestions
+                  </p>
+                  <ul className="space-y-2">
+                    {result.atsScore.suggestions.slice(0, 5).map((s, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <ChevronRight className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                        <span className="text-muted-foreground">{s}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* CTA */}
+              <Button asChild variant="gradient" className="w-full">
+                <Link href="/generate">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  Improve Resume with AI
+                </Link>
+              </Button>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="h-full min-h-[400px] rounded-xl border border-dashed border-border/50 flex flex-col items-center justify-center p-12 text-center"
+            >
+              <Target className="h-12 w-12 text-muted-foreground/40 mb-4" />
+              <h3 className="text-base font-semibold mb-1">ATS score appears here</h3>
+              <p className="text-sm text-muted-foreground max-w-xs">
+                Select your resume source and paste a job description to check your ATS compatibility
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

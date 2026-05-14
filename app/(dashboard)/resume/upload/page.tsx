@@ -5,7 +5,7 @@ import { getAuthUserId } from "@/lib/utils/auth";
 import { db } from "@/lib/db";
 import { MyResumePage } from "@/components/resume/my-resume-page";
 
-export const metadata: Metadata = { title: "My Resume | Hyrefy" };
+export const metadata: Metadata = { title: "My Master Resume | Hyrefy" };
 
 export default async function UploadPage() {
   const userId = await getAuthUserId();

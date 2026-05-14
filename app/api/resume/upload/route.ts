@@ -49,6 +49,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Could not extract text from file. Please ensure it's a valid resume." }, { status: 400 });
     }
 
+    // Clear previous master resumes so there is always exactly one
+    await db.resume.updateMany({
+      where: { userId: user.id, isMaster: true },
+      data: { isMaster: false },
+    });
+
     // Save resume to DB — no AI at upload time, AI only runs during Generate
     const resume = await db.resume.create({
       data: {
@@ -58,6 +64,7 @@ export async function POST(req: NextRequest) {
         fileType: file.type,
         rawText,
         parsedData: {},
+        isMaster: true,
       },
     });
 

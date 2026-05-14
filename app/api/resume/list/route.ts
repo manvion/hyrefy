@@ -13,7 +13,7 @@ export async function GET() {
     const resumes = await db.resume.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
-      select: { id: true, fileName: true, fileType: true, createdAt: true },
+      select: { id: true, fileName: true, fileType: true, isMaster: true, createdAt: true },
     });
 
     return NextResponse.json(resumes);

@@ -11,10 +11,10 @@ export async function POST(req: NextRequest) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { resumeId, jobTitle, jobDescription } = await req.json();
+    const { resumeId, resumeText, jobTitle, jobDescription } = await req.json();
 
-    if (!resumeId || !jobDescription) {
-      return NextResponse.json({ error: "resumeId and jobDescription are required" }, { status: 400 });
+    if ((!resumeId && !resumeText) || !jobDescription) {
+      return NextResponse.json({ error: "A resume (id or text) and jobDescription are required" }, { status: 400 });
     }
 
     // Get user
@@ -36,28 +36,35 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Get resume
-    const resume = await db.resume.findFirst({
-      where: { id: resumeId, userId: user.id },
-    });
+    // Resolve resume text — from saved resume or directly provided
+    let resolvedText: string;
+    let resolvedResumeId: string | null = null;
 
-    if (!resume) return NextResponse.json({ error: "Resume not found" }, { status: 404 });
-
-    if (!resume.rawText) {
-      return NextResponse.json({ error: "Resume text not found. Please re-upload your resume." }, { status: 400 });
+    if (resumeText && typeof resumeText === "string" && resumeText.trim().length >= 50) {
+      resolvedText = resumeText.trim();
+    } else {
+      const resume = await db.resume.findFirst({
+        where: { id: resumeId, userId: user.id },
+      });
+      if (!resume) return NextResponse.json({ error: "Resume not found" }, { status: 404 });
+      if (!resume.rawText) {
+        return NextResponse.json({ error: "Resume text not found. Please re-upload your resume." }, { status: 400 });
+      }
+      resolvedText = resume.rawText;
+      resolvedResumeId = resume.id;
     }
 
     // Analyze job description
     const jobAnalysis = await analyzeJobDescription(jobDescription, jobTitle || "Position");
 
     // Calculate ATS score using raw resume text
-    const atsScore = await calculateATSScore(resume.rawText, jobAnalysis);
+    const atsScore = await calculateATSScore(resolvedText, jobAnalysis);
 
     // Create scan record
     const scan = await db.resumeScan.create({
       data: {
         userId: user.id,
-        resumeId: resume.id,
+        resumeId: resolvedResumeId ?? undefined,
         jobTitle: jobTitle || jobAnalysis.title,
         jobDescription,
         atsScore: atsScore.overall,

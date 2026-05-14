@@ -192,7 +192,7 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
       >
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold">My Resume</h1>
+          <h1 className="text-2xl font-bold">My Master Resume</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Your master resume — used to generate tailored applications
           </p>
