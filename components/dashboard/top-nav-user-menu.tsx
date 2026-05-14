@@ -34,7 +34,7 @@ function DemoUserMenu({ userId }: { userId: string }) {
               <p className="font-medium">Demo User</p>
               <p className="text-xs text-muted-foreground">demo@hyrefy.com</p>
             </div>
-            <Link href={`/settings/${userId}`} onClick={() => setOpen(false)}
+            <Link href="/settings" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent transition-colors">
               <Settings className="h-3.5 w-3.5 text-muted-foreground" />Settings
             </Link>
@@ -103,11 +103,11 @@ export function TopNavUserMenu({ userId, isPremium }: Props) {
                 </span>
               )}
             </div>
-            <Link href={`/billing/${userId}`} onClick={() => setOpen(false)}
+            <Link href="/billing" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent transition-colors text-foreground">
               <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />Billing
             </Link>
-            <Link href={`/settings/${userId}`} onClick={() => setOpen(false)}
+            <Link href="/settings" onClick={() => setOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent transition-colors text-foreground">
               <Settings className="h-3.5 w-3.5 text-muted-foreground" />Settings
             </Link>

@@ -71,7 +71,7 @@ export function TopNav({ userId, isPremium }: Props) {
           {/* Left: Logo (vertically centered) */}
           <div className="flex items-center shrink-0 pr-6 border-r border-border/30 mr-2">
             <Link
-              href={`/dashboard/${userId}`}
+              href="/dashboard"
               className="flex items-center gap-2 group"
             >
               <HyreLogo size={26} />
@@ -88,7 +88,7 @@ export function TopNav({ userId, isPremium }: Props) {
               return (
                 <Link
                   key={item.href}
-                  href={`${item.href}/${userId}`}
+                  href={item.href}
                   className={cn(
                     "relative flex items-center gap-1.5 px-3 pb-[11px] pt-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 border-b-2",
                     isActive
@@ -108,7 +108,7 @@ export function TopNav({ userId, isPremium }: Props) {
             <ThemeToggle />
             {!isPremium && (
               <Button asChild size="sm" variant="gradient" className="hidden sm:flex h-7 text-xs gap-1 px-2.5">
-                <Link href={`/billing/${userId}`}>
+                <Link href="/billing">
                   <Crown className="h-3 w-3" />
                   Upgrade
                 </Link>
@@ -163,16 +163,16 @@ export function TopNav({ userId, isPremium }: Props) {
             );
           })}
           <div className="pt-2 mt-2 border-t border-border/30 space-y-0.5">
-            <Link href={`/billing/${userId}`} onClick={() => setMobileOpen(false)}
+            <Link href="/billing" onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors">
               <CreditCard className="h-4 w-4 shrink-0" />Billing
             </Link>
-            <Link href={`/settings/${userId}`} onClick={() => setMobileOpen(false)}
+            <Link href="/settings" onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors">
               <Settings className="h-4 w-4 shrink-0" />Settings
             </Link>
             {!isPremium && (
-              <Link href={`/billing/${userId}`} onClick={() => setMobileOpen(false)}
+              <Link href="/billing" onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors">
                 <Crown className="h-4 w-4 shrink-0" />Upgrade to Premium
               </Link>
