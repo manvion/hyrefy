@@ -1,25 +1,36 @@
 /**
  * OpenRouter AI client — model routing, streaming, retry, and fallback.
  * Uses fetch directly; no SDK dependency.
+ * Models verified from openrouter.ai/collections/free-models
  */
 
 const BASE_URL = "https://openrouter.ai/api/v1";
 
 // ─── Model registry ────────────────────────────────────────────────────────────
 export const OR_MODELS = {
-  /** Fast chat — resume writing, cover letters, bullet improvements, summaries */
-  RESUME:  "deepseek/deepseek-chat-v3-0324:free",
-  /** ATS scoring, keyword analysis — same fast model (qwen3-235b free tier unavailable) */
-  ATS:     "deepseek/deepseek-chat-v3-0324:free",
+  /** Resume writing, cover letters, bullet improvements */
+  RESUME:   "openai/gpt-oss-120b:free",
+  /** ATS scoring, keyword analysis */
+  ATS:      "google/gemma-4-31b-it:free",
   /** Structured extraction — resume parsing */
-  PARSER:  "deepseek/deepseek-chat-v3-0324:free",
+  PARSER:   "openai/gpt-oss-20b:free",
   /** Reasoning — candidate ranking, advanced comparisons */
-  RANKING: "deepseek/deepseek-r1:free",
-  /** Fallback — reliable, always available */
-  FALLBACK: "deepseek/deepseek-chat-v3-0324:free",
+  RANKING:  "nvidia/nemotron-3-super-120b-a12b:free",
+  /** Final fallback — OpenRouter auto-routes to best available free model */
+  FALLBACK: "openrouter/free",
 } as const;
 
 export type ORModel = (typeof OR_MODELS)[keyof typeof OR_MODELS];
+
+// Ordered fallback chain — tried in sequence on 404 (endpoint unavailable)
+const FREE_CHAIN: string[] = [
+  "openai/gpt-oss-120b:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "openai/gpt-oss-20b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "openrouter/free",
+];
 
 export interface OROptions {
   system?: string;
@@ -27,7 +38,7 @@ export interface OROptions {
   temperature?: number;
   /** Abort after this many ms (default: 45 000) */
   timeout?: number;
-  /** Disable chain-of-thought on qwen3 / deepseek-r1 for speed (default: false = disabled) */
+  /** Enable chain-of-thought (default: false) */
   thinking?: boolean;
 }
 
@@ -35,7 +46,6 @@ export interface OROptions {
 
 const MAX_RETRIES = 2;
 const RETRY_ON = new Set([429, 502, 503, 524]);
-// These trigger immediate fallback — no point retrying
 const FALLBACK_ON = new Set([404, 400]);
 
 function headers() {
@@ -53,18 +63,13 @@ function body(
   opts: OROptions,
   stream: boolean
 ): Record<string, unknown> {
-  const b: Record<string, unknown> = {
+  return {
     model,
     messages,
     max_tokens: opts.maxTokens ?? 4096,
     temperature: opts.temperature ?? 0.7,
     stream,
   };
-  // Disable CoT on qwen3 unless explicitly requested — speeds up response
-  if (model.includes("qwen3") && !opts.thinking) {
-    b.thinking = { type: "disabled" };
-  }
-  return b;
 }
 
 function buildMessages(system: string | undefined, prompt: string) {
@@ -120,7 +125,6 @@ async function callOnce(
 
   if (!res.ok) {
     const txt = await res.text().catch(() => "");
-    // 404/400 = endpoint missing — skip retries, let orGenerate() try fallback immediately
     if (FALLBACK_ON.has(res.status)) {
       throw new Error(`OpenRouter ${res.status}: ${txt.slice(0, 300)}`);
     }
@@ -136,7 +140,11 @@ async function callOnce(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
-// ─── Public: non-streaming with automatic fallback ────────────────────────────
+function isEndpointError(err: Error): boolean {
+  return err.message.includes("404") || err.message.includes("No endpoints");
+}
+
+// ─── Public: non-streaming with chain fallback ─────────────────────────────────
 
 export async function orGenerate(
   model: ORModel,
@@ -144,20 +152,22 @@ export async function orGenerate(
   opts: OROptions = {}
 ): Promise<string> {
   const msgs = buildMessages(opts.system, prompt);
-  try {
-    return await callOnce(model, msgs, opts);
-  } catch (primaryErr) {
-    if (model === OR_MODELS.FALLBACK) throw primaryErr;
-    // Try fallback model once
+  const chain = [model as string, ...FREE_CHAIN.filter(m => m !== model)];
+
+  let lastErr: Error | undefined;
+  for (const m of chain) {
     try {
-      return await callOnce(OR_MODELS.FALLBACK, msgs, { ...opts, timeout: 30_000 }, 0);
-    } catch {
-      throw primaryErr; // surface original error
+      return await callOnce(m, msgs, opts);
+    } catch (err) {
+      lastErr = err instanceof Error ? err : new Error(String(err));
+      if (!isEndpointError(lastErr)) throw lastErr;
+      // 404 = endpoint unavailable, try next model
     }
   }
+  throw lastErr ?? new Error("All OpenRouter free models are currently unavailable");
 }
 
-// ─── Public: streaming — yields content delta strings ─────────────────────────
+// ─── Public: streaming with chain fallback — yields content delta strings ──────
 
 export async function* orStream(
   model: ORModel,
@@ -166,25 +176,37 @@ export async function* orStream(
 ): AsyncGenerator<string> {
   const msgs = buildMessages(opts.system, prompt);
   const timeout = opts.timeout ?? 50_000;
-  const reqBody = body(model, msgs, opts, true);
+  const chain = [model as string, ...FREE_CHAIN.filter(m => m !== model)];
 
-  const res = await fetchWithTimeout(
-    `${BASE_URL}/chat/completions`,
-    { method: "POST", headers: headers(), body: JSON.stringify(reqBody) },
-    timeout
-  );
+  for (const m of chain) {
+    const reqBody = body(m, msgs, opts, true);
 
-  if (!res.ok) {
-    // On stream failure, fall back to non-streaming and yield full text at once
-    if (model !== OR_MODELS.FALLBACK) {
-      const fallback = await orGenerate(OR_MODELS.FALLBACK, prompt, opts);
-      yield fallback;
-      return;
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(
+        `${BASE_URL}/chat/completions`,
+        { method: "POST", headers: headers(), body: JSON.stringify(reqBody) },
+        timeout
+      );
+    } catch {
+      continue; // network error — try next
     }
-    const txt = await res.text().catch(() => "");
-    throw new Error(`OpenRouter stream ${res.status}: ${txt.slice(0, 300)}`);
+
+    if (!res.ok) {
+      const txt = await res.text().catch(() => "");
+      if (FALLBACK_ON.has(res.status)) continue; // endpoint down — try next
+      throw new Error(`OpenRouter stream ${res.status}: ${txt.slice(0, 300)}`);
+    }
+
+    // Stream from this model
+    yield* readSSEStream(res);
+    return;
   }
 
+  throw new Error("All OpenRouter free models are currently unavailable for streaming");
+}
+
+async function* readSSEStream(res: Response): AsyncGenerator<string> {
   const reader = res.body!.getReader();
   const dec = new TextDecoder();
   let buf = "";
