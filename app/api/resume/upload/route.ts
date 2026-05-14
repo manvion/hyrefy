@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       resumeId: resume.id,
       message: "Resume uploaded successfully",
+      rawTextPreview: rawText.slice(0, 2000),
     });
   } catch (error) {
     console.error("Resume upload error:", error);

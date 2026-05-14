@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { SignOutButton as ClerkSignOut } from "@clerk/nextjs";
-import { LayoutDashboard, Upload, Sparkles, History, MoreHorizontal, CreditCard, Settings, LogOut, X, KanbanSquare, FileSearch, Flame, BrainCircuit } from "lucide-react";
+import { LayoutDashboard, Upload, Sparkles, History, MoreHorizontal, CreditCard, Settings, LogOut, X, KanbanSquare, FileSearch, BrainCircuit, FileText } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { isDemoMode } from "@/lib/utils/demo-mode";
@@ -14,16 +14,16 @@ function stripUserId(path: string): string {
 }
 
 const navItems = [
-  { href: "/dashboard", icon: LayoutDashboard, label: "Home"     },
-  { href: "/generate",  icon: Sparkles,        label: "Generate" },
-  { href: "/tracker",   icon: KanbanSquare,    label: "Tracker"  },
-  { href: "/history",   icon: History,         label: "History"  },
+  { href: "/dashboard", icon: LayoutDashboard, label: "Home"    },
+  { href: "/generate",  icon: Sparkles,        label: "Improve" },
+  { href: "/tracker",   icon: KanbanSquare,    label: "Tracker" },
+  { href: "/history",   icon: History,         label: "History" },
 ];
 
 const moreItems = [
   { href: "/resume/upload",  icon: Upload,       label: "My Resume"    },
+  { href: "/build",          icon: FileText,     label: "Build Resume" },
   { href: "/analyze",        icon: FileSearch,   label: "ATS Analyzer" },
-  { href: "/roast",          icon: Flame,        label: "Roast My CV"  },
   { href: "/interview-prep", icon: BrainCircuit, label: "Interview AI" },
   { href: "/billing",        icon: CreditCard,   label: "Billing"      },
   { href: "/settings",       icon: Settings,     label: "Settings"     },

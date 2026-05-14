@@ -77,7 +77,7 @@ export default async function GeneratePage() {
           <Upload className="h-8 w-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold mb-2">Upload your master resume first</h1>
+          <h1 className="text-2xl font-bold mb-2">Upload your resume first</h1>
           <p className="text-muted-foreground max-w-md">
             Upload your resume once — we&apos;ll tailor it to every job you apply for.
           </p>

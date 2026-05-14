@@ -14,9 +14,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/components/ui/toaster";
 import {
   Loader2, Search, Target, AlertTriangle,
-  CheckCircle, ChevronRight, Wand2, ArrowRight, TrendingUp, Mail
+  CheckCircle, ChevronRight, Wand2, ArrowRight, TrendingUp, Mail, Zap
 } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils/cn";
 import type { ATSScore, JobAnalysis } from "@/types";
 import { CoverLetterClient } from "@/components/resume/cover-letter-client";
 
@@ -88,11 +89,21 @@ export function AnalyzeClient() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ScanResult | null>(null);
   const [resumes, setResumes] = useState<{ id: string; fileName: string }[]>([]);
+  const [scanLimit, setScanLimit] = useState<{ used: number; limit: number; isPremium: boolean } | null>(null);
 
   useEffect(() => {
     fetch("/api/resume/list")
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setResumes(data); })
+      .catch(() => {});
+
+    fetch("/api/user/subscription")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && typeof data.scansUsed === "number") {
+          setScanLimit({ used: data.scansUsed, limit: data.scansLimit, isPremium: data.status === "PREMIUM" });
+        }
+      })
       .catch(() => {});
   }, []);
 
@@ -192,9 +203,39 @@ export function AnalyzeClient() {
               </p>
             </div>
 
+            {/* Free tier scan limit */}
+            {scanLimit && !scanLimit.isPremium && (
+              <div className={cn(
+                "rounded-xl border px-4 py-3 flex items-center gap-3",
+                scanLimit.used >= scanLimit.limit
+                  ? "border-destructive/30 bg-destructive/5"
+                  : scanLimit.used >= scanLimit.limit - 1
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : "border-border/40 bg-muted/10"
+              )}>
+                <Zap className={cn("h-4 w-4 shrink-0", scanLimit.used >= scanLimit.limit ? "text-destructive" : "text-amber-400")} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold">
+                    {scanLimit.used >= scanLimit.limit
+                      ? "Monthly scan limit reached"
+                      : `${scanLimit.limit - scanLimit.used} scan${scanLimit.limit - scanLimit.used !== 1 ? "s" : ""} remaining this month`}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {scanLimit.used} / {scanLimit.limit} free scans used
+                    {scanLimit.used >= scanLimit.limit && " · Upgrade for unlimited scans"}
+                  </p>
+                </div>
+                {scanLimit.used >= scanLimit.limit && (
+                  <Link href="/billing">
+                    <Button size="sm" variant="gradient" className="h-7 text-xs shrink-0">Upgrade</Button>
+                  </Link>
+                )}
+              </div>
+            )}
+
             <Button
               onClick={handleAnalyze}
-              disabled={loading || !resumeId || !jobDescription.trim()}
+              disabled={loading || !resumeId || !jobDescription.trim() || (!!scanLimit && !scanLimit.isPremium && scanLimit.used >= scanLimit.limit)}
               variant="gradient"
               size="lg"
               className="w-full"
