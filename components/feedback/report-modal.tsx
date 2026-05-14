@@ -23,6 +23,7 @@ interface Props {
 }
 
 const fieldCls = "w-full rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition";
+const fieldErrCls = "w-full rounded-xl border border-destructive bg-background text-foreground placeholder:text-muted-foreground px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-destructive/40 transition";
 
 export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
   const [type, setType] = useState<ReportType>("bug");
@@ -32,10 +33,17 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [titleErr, setTitleErr] = useState(false);
+  const [descErr, setDescErr] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !description.trim()) return;
+
+    const noTitle = !title.trim();
+    const noDesc  = !description.trim();
+    setTitleErr(noTitle);
+    setDescErr(noDesc);
+    if (noTitle || noDesc) return;
 
     setSubmitting(true);
     setError("");
@@ -57,12 +65,12 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
         <div
-          className="relative w-full max-w-lg rounded-2xl border border-border/50 bg-card shadow-2xl pointer-events-auto overflow-hidden"
+          className="relative w-full max-w-lg rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
@@ -72,6 +80,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
               <p className="text-xs text-muted-foreground mt-0.5">We review every report and usually respond within 24 hours</p>
             </div>
             <button
+              type="button"
               onClick={onClose}
               className="h-8 w-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
@@ -116,32 +125,33 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                 </div>
               </div>
 
-              {/* Title */}
+              {/* Summary */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  Summary <span className="text-muted-foreground font-normal normal-case">(optional)</span>
+                  Summary <span className="text-primary">*</span>
                 </label>
                 <input
-                  className={fieldCls}
-                  placeholder="Brief one-line description (auto-filled from type if left blank)"
+                  className={titleErr ? fieldErrCls : fieldCls}
+                  placeholder="Brief one-line description of the issue"
                   value={title}
-                  onChange={e => setTitle(e.target.value)}
+                  onChange={e => { setTitle(e.target.value); setTitleErr(false); }}
                 />
+                {titleErr && <p className="text-xs text-destructive mt-1">Please enter a summary</p>}
               </div>
 
-              {/* Description */}
+              {/* Details */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
                   Details <span className="text-primary">*</span>
                 </label>
                 <textarea
-                  className={cn(fieldCls, "resize-none")}
+                  className={cn(descErr ? fieldErrCls : fieldCls, "resize-none")}
                   rows={5}
                   placeholder="Describe what happened, what you expected, and steps to reproduce..."
                   value={description}
-                  onChange={e => setDescription(e.target.value)}
-                  required
+                  onChange={e => { setDescription(e.target.value); setDescErr(false); }}
                 />
+                {descErr && <p className="text-xs text-destructive mt-1">Please describe the issue</p>}
               </div>
 
               {/* Contact */}
@@ -171,7 +181,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                   type="submit"
                   variant="gradient"
                   className="flex-1"
-                  disabled={submitting || !description.trim()}
+                  disabled={submitting}
                 >
                   {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</> : "Submit Report"}
                 </Button>
