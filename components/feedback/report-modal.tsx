@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { X, Loader2 } from "lucide-react";
@@ -31,6 +32,9 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
   const [submitting, setSubmitting]   = useState(false);
   const [done, setDone]               = useState(false);
   const [emailSent, setEmailSent]     = useState<boolean | null>(null);
+  const [mounted, setMounted]         = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const handleSubmit = async () => {
     if (!description.trim() || submitting) return;
@@ -59,21 +63,19 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
     }
   };
 
-  return (
-    /* Single div: backdrop + scroll container + click-to-close */
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm overflow-y-auto"
       onClick={onClose}
     >
       <div className="flex min-h-full items-center justify-center p-4">
-
-        {/* Card — stopPropagation so clicks inside don't close */}
         <div
           className="relative w-full max-w-md rounded-2xl border border-border/50 bg-card shadow-2xl my-2"
           onClick={e => e.stopPropagation()}
         >
           {done ? (
-            /* ── Success state ── */
             <div className="flex flex-col items-center justify-center py-12 px-8 text-center">
               <div className="text-6xl mb-4">✅</div>
               <h3 className="text-xl font-bold text-foreground mb-3">Thank you for your report!</h3>
@@ -91,7 +93,6 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
             </div>
           ) : (
             <>
-              {/* ── Header ── */}
               <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-5 border-b border-border/30 rounded-t-2xl">
                 <button
                   type="button"
@@ -109,10 +110,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                 </div>
               </div>
 
-              {/* ── Form ── */}
               <div className="p-6 space-y-5">
-
-                {/* Type */}
                 <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-3">What kind of issue?</p>
                   <div className="grid grid-cols-5 gap-2">
@@ -135,7 +133,6 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 block">
                     Describe the issue <span className="text-primary">*</span>
@@ -153,7 +150,6 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                   )}
                 </div>
 
-                {/* Phone */}
                 <div>
                   <label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-2 block">
                     Phone / Alternative contact <span className="text-muted-foreground font-normal normal-case">(optional)</span>
@@ -167,7 +163,6 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                   />
                 </div>
 
-                {/* Buttons */}
                 <div className="flex gap-3 pt-1">
                   <Button type="button" variant="outline" onClick={onClose} className="flex-1 h-11">
                     Cancel
@@ -193,8 +188,8 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
             </>
           )}
         </div>
-
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
