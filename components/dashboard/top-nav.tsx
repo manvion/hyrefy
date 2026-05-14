@@ -80,7 +80,7 @@ export function TopNav({ userId, isPremium }: Props) {
           </div>
 
           {/* Center: Nav tabs – sit at bottom with underline indicator */}
-          <nav className="hidden lg:flex flex-1 items-end overflow-x-auto no-scrollbar gap-0 -mb-px">
+          <nav className="hidden lg:flex flex-1 items-end justify-center overflow-x-auto no-scrollbar gap-0 -mb-px">
             {navItems.map((item) => {
               const isActive =
                 cleanPath === item.href ||
@@ -150,7 +150,7 @@ export function TopNav({ userId, isPremium }: Props) {
             return (
               <Link
                 key={item.href}
-                href={`${item.href}/${userId}`}
+                href={item.href}
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",

@@ -199,3 +199,20 @@ body {
 /* Hide scrollbar but keep scroll functionality */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Ensure native form elements respect the theme in all browsers */
+select, input, textarea {
+  color-scheme: light;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+.dark select, .dark input, .dark textarea {
+  color-scheme: dark;
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+/* Select option styling */
+select option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}

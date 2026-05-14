@@ -9,6 +9,9 @@ export async function POST(req: NextRequest) {
     const { userId } = await auth();
     if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const body = await req.json().catch(() => ({}));
+    const locale = (body.locale as string) === "fr" ? "fr" : "en";
+
     const user = await db.user.findUnique({
       where: { clerkId: userId },
       include: { subscription: true },
@@ -25,9 +28,11 @@ export async function POST(req: NextRequest) {
     const pricing = getPricing(country);
 
     const session = await stripe.checkout.sessions.create({
+      ui_mode: "embedded",
       mode: "subscription",
       payment_method_types: ["card"],
       customer_email: user.email || undefined,
+      locale: locale as "en" | "fr",
       line_items: [
         {
           price_data: {
@@ -42,13 +47,12 @@ export async function POST(req: NextRequest) {
           quantity: 1,
         },
       ],
-      success_url: `${origin}/billing?success=true`,
-      cancel_url: `${origin}/billing?canceled=true`,
+      return_url: `${origin}/billing?success=true`,
       metadata: { userId: user.id, clerkId: userId },
       subscription_data: { metadata: { userId: user.id } },
     });
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ clientSecret: session.client_secret });
   } catch (error) {
     console.error("Checkout error:", error);
     return NextResponse.json({ error: "Failed to create checkout session" }, { status: 500 });

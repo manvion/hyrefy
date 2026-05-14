@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Download, FileText, Mail, Globe, TrendingUp,
   Calendar, ChevronDown, ChevronUp, X, Sparkles, Clock,
+  CheckCircle2, AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,11 +36,35 @@ interface Props {
   scans: ScanItem[];
 }
 
+const STORAGE_KEY = "hyrefy:downloaded-scans";
+
+function useDownloadedScans() {
+  const [downloaded, setDownloaded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) setDownloaded(new Set(JSON.parse(raw) as string[]));
+    } catch { /* ignore */ }
+  }, []);
+
+  const markDownloaded = useCallback((scanId: string) => {
+    setDownloaded(prev => {
+      const next = new Set(prev);
+      next.add(scanId);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...next])); } catch { /* ignore */ }
+      return next;
+    });
+  }, []);
+
+  return { downloaded, markDownloaded };
+}
+
 function atsColor(score: number) {
-  if (score >= 80) return "text-emerald-400 border-emerald-500/30 bg-emerald-500/10";
-  if (score >= 65) return "text-blue-400 border-blue-500/30 bg-blue-500/10";
-  if (score >= 50) return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-  return "text-red-400 border-red-500/30 bg-red-500/10";
+  if (score >= 80) return "text-emerald-500 border-emerald-500/30 bg-emerald-500/10";
+  if (score >= 65) return "text-blue-500 border-blue-500/30 bg-blue-500/10";
+  if (score >= 50) return "text-amber-500 border-amber-500/30 bg-amber-500/10";
+  return "text-red-500 border-red-500/30 bg-red-500/10";
 }
 
 function openPDF(content: string, title: string) {
@@ -79,7 +104,15 @@ function groupByDate(scans: ScanItem[]) {
   return groups;
 }
 
-function ScanCard({ scan }: { scan: ScanItem }) {
+function ScanCard({
+  scan,
+  isDownloaded,
+  onDownload,
+}: {
+  scan: ScanItem;
+  isDownloaded: boolean;
+  onDownload: (scanId: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const country = scan.jobCountry ? SUPPORTED_COUNTRIES[scan.jobCountry as keyof typeof SUPPORTED_COUNTRIES] : null;
   const ai = scan.aiResults;
@@ -88,14 +121,20 @@ function ScanCard({ scan }: { scan: ScanItem }) {
   const scoreAfter = scan.atsScore || ai?.atsScoreAfter;
   const hasCover = !!(ai?.coverLetter);
   const hasResume = !!(ai?.tailoredResume);
+  const hasContent = hasResume || hasCover;
   const slug = `${scan.jobTitle}${scan.company ? `-${scan.company}` : ""}`.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+
+  const handleDownload = (fn: () => void) => {
+    fn();
+    onDownload(scan.id);
+  };
 
   return (
     <motion.div
       layout
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl border border-border/50 bg-card/30 hover:bg-card/50 transition-all overflow-hidden"
+      className="rounded-xl border border-border/50 bg-card hover:bg-card/80 transition-all overflow-hidden"
     >
       <div className="p-4 flex items-start gap-4 flex-wrap">
         {/* Country flag / icon */}
@@ -106,7 +145,7 @@ function ScanCard({ scan }: { scan: ScanItem }) {
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start gap-2 flex-wrap">
-            <p className="font-semibold text-sm">{scan.jobTitle}</p>
+            <p className="font-semibold text-sm text-foreground">{scan.jobTitle}</p>
             {scan.company && <span className="text-sm text-muted-foreground">@ {scan.company}</span>}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
@@ -122,10 +161,23 @@ function ScanCard({ scan }: { scan: ScanItem }) {
             )}
             <Badge variant="secondary" className="text-[10px] px-2 h-4">{lang}</Badge>
             {hasCover && <Badge variant="outline" className="text-[10px] px-2 h-4 text-primary border-primary/30">+ Cover Letter</Badge>}
+
+            {/* Download status badge */}
+            {hasContent && (
+              isDownloaded ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-2 py-0.5">
+                  <CheckCircle2 className="h-2.5 w-2.5" />Downloaded
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/25 rounded-full px-2 py-0.5">
+                  <AlertCircle className="h-2.5 w-2.5" />Not downloaded
+                </span>
+              )
+            )}
           </div>
         </div>
 
-        {/* ATS scores */}
+        {/* ATS scores + expand */}
         <div className="flex items-center gap-3 shrink-0">
           {scoreBefore !== null && scoreAfter && (
             <div className="hidden sm:flex items-center gap-2 text-xs">
@@ -136,13 +188,15 @@ function ScanCard({ scan }: { scan: ScanItem }) {
               </span>
             </div>
           )}
-          <button
-            onClick={() => setExpanded(!expanded)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent"
-          >
-            {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-            {expanded ? "Less" : "Downloads"}
-          </button>
+          {hasContent && (
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-accent active:bg-accent active:scale-[0.97]"
+            >
+              {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              {expanded ? "Close" : "Download"}
+            </button>
+          )}
         </div>
       </div>
 
@@ -155,18 +209,18 @@ function ScanCard({ scan }: { scan: ScanItem }) {
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="border-t border-border/30 p-4 space-y-3 bg-card/20">
+            <div className="border-t border-border/30 p-4 space-y-3 bg-muted/20">
 
               {/* Downloads */}
               <div className="flex items-center gap-2 flex-wrap">
                 {hasResume && (
                   <>
                     <Button size="sm" variant="gradient" className="h-7 text-xs gap-1.5"
-                      onClick={() => openPDF(ai!.tailoredResume!, `Resume-${slug}`)}>
+                      onClick={() => handleDownload(() => openPDF(ai!.tailoredResume!, `Resume-${slug}`))}>
                       <FileText className="h-3 w-3" />Resume PDF
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-                      onClick={() => downloadTxt(ai!.tailoredResume!, `resume-${slug}.txt`)}>
+                      onClick={() => handleDownload(() => downloadTxt(ai!.tailoredResume!, `resume-${slug}.txt`))}>
                       <Download className="h-3 w-3" />.txt
                     </Button>
                   </>
@@ -174,11 +228,11 @@ function ScanCard({ scan }: { scan: ScanItem }) {
                 {hasCover && (
                   <>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-                      onClick={() => openPDF(ai!.coverLetter!, `Cover-${slug}`)}>
+                      onClick={() => handleDownload(() => openPDF(ai!.coverLetter!, `Cover-${slug}`))}>
                       <Mail className="h-3 w-3" />Cover Letter PDF
                     </Button>
-                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-muted-foreground"
-                      onClick={() => downloadTxt(ai!.coverLetter!, `cover-${slug}.txt`)}>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={() => handleDownload(() => downloadTxt(ai!.coverLetter!, `cover-${slug}.txt`))}>
                       <Download className="h-3 w-3" />.txt
                     </Button>
                   </>
@@ -223,6 +277,7 @@ function ScanCard({ scan }: { scan: ScanItem }) {
 
 export function HistoryClient({ scans }: Props) {
   const [query, setQuery] = useState("");
+  const { downloaded, markDownloaded } = useDownloadedScans();
 
   const filtered = useMemo(() => {
     if (!query.trim()) return scans;
@@ -243,7 +298,7 @@ export function HistoryClient({ scans }: Props) {
           <FileText className="h-8 w-8 text-muted-foreground" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold mb-1">No generations yet</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-1">No generations yet</h2>
           <p className="text-muted-foreground text-sm max-w-sm">
             Generate your first tailored resume and cover letter to get started.
           </p>
@@ -258,8 +313,21 @@ export function HistoryClient({ scans }: Props) {
     );
   }
 
+  const notDownloadedCount = scans.filter(s => (s.aiResults?.tailoredResume || s.aiResults?.coverLetter) && !downloaded.has(s.id)).length;
+
   return (
     <div className="space-y-6">
+      {/* Summary bar */}
+      {notDownloadedCount > 0 && (
+        <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex items-center gap-3">
+          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0" />
+          <p className="text-sm text-foreground">
+            <span className="font-semibold">{notDownloadedCount}</span>{" "}
+            {notDownloadedCount === 1 ? "resume has" : "resumes have"} not been downloaded yet.
+          </p>
+        </div>
+      )}
+
       {/* Search */}
       <div className="relative">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -268,7 +336,7 @@ export function HistoryClient({ scans }: Props) {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search by job title, company, or country..."
-          className="w-full rounded-xl border border-border bg-background pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+          className="w-full rounded-xl border border-border bg-background text-foreground pl-10 pr-10 py-2.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
         />
         {query && (
           <button onClick={() => setQuery("")} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
@@ -287,7 +355,6 @@ export function HistoryClient({ scans }: Props) {
       {/* Timeline groups */}
       {Object.entries(groups).map(([label, groupScans]) => (
         <div key={label} className="space-y-3">
-          {/* Group label */}
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-semibold uppercase tracking-wide">
               <Calendar className="h-3.5 w-3.5" />
@@ -297,10 +364,14 @@ export function HistoryClient({ scans }: Props) {
             <span className="text-xs text-muted-foreground">{groupScans.length}</span>
           </div>
 
-          {/* Cards */}
           <div className="space-y-2">
             {groupScans.map(scan => (
-              <ScanCard key={scan.id} scan={scan} />
+              <ScanCard
+                key={scan.id}
+                scan={scan}
+                isDownloaded={downloaded.has(scan.id)}
+                onDownload={markDownloaded}
+              />
             ))}
           </div>
         </div>
