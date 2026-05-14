@@ -140,8 +140,9 @@ async function callOnce(
   return data.choices?.[0]?.message?.content ?? "";
 }
 
-function isEndpointError(err: Error): boolean {
-  return err.message.includes("404") || err.message.includes("No endpoints");
+function shouldTryNextModel(err: Error): boolean {
+  const msg = err.message;
+  return msg.includes("404") || msg.includes("No endpoints") || msg.includes("429");
 }
 
 // ─── Public: non-streaming with chain fallback ─────────────────────────────────
@@ -160,8 +161,8 @@ export async function orGenerate(
       return await callOnce(m, msgs, opts);
     } catch (err) {
       lastErr = err instanceof Error ? err : new Error(String(err));
-      if (!isEndpointError(lastErr)) throw lastErr;
-      // 404 = endpoint unavailable, try next model
+      if (!shouldTryNextModel(lastErr)) throw lastErr;
+      // 404 = endpoint unavailable, 429 = rate-limited — try next model
     }
   }
   throw lastErr ?? new Error("All OpenRouter free models are currently unavailable");
@@ -194,7 +195,7 @@ export async function* orStream(
 
     if (!res.ok) {
       const txt = await res.text().catch(() => "");
-      if (FALLBACK_ON.has(res.status)) continue; // endpoint down — try next
+      if (FALLBACK_ON.has(res.status) || res.status === 429) continue; // endpoint down or rate-limited — try next
       throw new Error(`OpenRouter stream ${res.status}: ${txt.slice(0, 300)}`);
     }
 
