@@ -2,16 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/utils/auth";
 import { db } from "@/lib/db";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dbc = db as any;
 
+async function getDbUser(clerkId: string) {
+  return db.user.findUnique({ where: { clerkId } });
+}
+
 export async function GET() {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const clerkId = await getAuthUserId();
+  if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const user = await getDbUser(clerkId);
+    if (!user) return NextResponse.json({ applications: [] });
+
     const applications = await dbc.jobApplication.findMany({
-      where: { userId },
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
     });
     return NextResponse.json({ applications });
@@ -21,8 +27,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const clerkId = await getAuthUserId();
+  if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const { company, jobTitle, jobUrl, jobDescription, location, salary, currency, status, notes } = body;
@@ -32,9 +38,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const user = await getDbUser(clerkId);
+    if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
     const app = await dbc.jobApplication.create({
       data: {
-        userId,
+        userId: user.id,
         company,
         jobTitle,
         jobUrl: jobUrl || null,

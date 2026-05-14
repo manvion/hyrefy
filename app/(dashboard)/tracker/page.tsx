@@ -14,10 +14,13 @@ export default async function TrackerPage() {
   let applications: object[] = [];
   try {
     if (userId) {
-      applications = await dbc.jobApplication.findMany({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-      });
+      const user = await db.user.findUnique({ where: { clerkId: userId } });
+      if (user) {
+        applications = await dbc.jobApplication.findMany({
+          where: { userId: user.id },
+          orderBy: { createdAt: "desc" },
+        });
+      }
     }
   } catch {
     // DB not configured

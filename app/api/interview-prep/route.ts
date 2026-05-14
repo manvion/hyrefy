@@ -3,16 +3,18 @@ import { getAuthUserId } from "@/lib/utils/auth";
 import { generateInterviewPrep } from "@/lib/ai/interview-prep";
 import { db } from "@/lib/db";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const dbc = db as any;
 
 export async function GET() {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const clerkId = await getAuthUserId();
+  if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
+    const user = await db.user.findUnique({ where: { clerkId } });
+    if (!user) return NextResponse.json({ preps: [] });
+
     const preps = await dbc.interviewPrep.findMany({
-      where: { userId },
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 20,
     });
@@ -23,8 +25,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const userId = await getAuthUserId();
-  if (!userId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const clerkId = await getAuthUserId();
+  if (!clerkId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
   const { jobTitle, company, jobDescription, industry, level, resumeText } = body;
@@ -35,19 +37,22 @@ export async function POST(request: NextRequest) {
     const result = await generateInterviewPrep({ jobTitle, company, jobDescription, industry, level, resumeText });
 
     try {
-      await dbc.interviewPrep.create({
-        data: {
-          userId,
-          jobTitle,
-          company: company || null,
-          jobDescription: jobDescription || null,
-          industry: industry || null,
-          level: level || null,
-          questions: JSON.parse(JSON.stringify(result.questions)),
-        },
-      });
+      const user = await db.user.findUnique({ where: { clerkId } });
+      if (user) {
+        await dbc.interviewPrep.create({
+          data: {
+            userId: user.id,
+            jobTitle,
+            company: company || null,
+            jobDescription: jobDescription || null,
+            industry: industry || null,
+            level: level || null,
+            questions: JSON.parse(JSON.stringify(result.questions)),
+          },
+        });
+      }
     } catch {
-      // DB save optional
+      // DB save optional — don't fail the request
     }
 
     return NextResponse.json(result);
