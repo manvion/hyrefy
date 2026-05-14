@@ -9,14 +9,14 @@ const BASE_URL = "https://openrouter.ai/api/v1";
 export const OR_MODELS = {
   /** Fast chat — resume writing, cover letters, bullet improvements, summaries */
   RESUME:  "deepseek/deepseek-chat-v3-0324:free",
-  /** Large MoE — ATS scoring, keyword analysis, semantic matching */
-  ATS:     "qwen/qwen3-235b-a22b:free",
-  /** Multimodal — resume parsing, structured extraction */
-  PARSER:  "meta-llama/llama-4-maverick:free",
+  /** ATS scoring, keyword analysis — same fast model (qwen3-235b free tier unavailable) */
+  ATS:     "deepseek/deepseek-chat-v3-0324:free",
+  /** Structured extraction — resume parsing */
+  PARSER:  "deepseek/deepseek-chat-v3-0324:free",
   /** Reasoning — candidate ranking, advanced comparisons */
   RANKING: "deepseek/deepseek-r1:free",
-  /** Fast fallback — any task, always available */
-  FALLBACK: "meta-llama/llama-3.1-8b-instruct:free",
+  /** Fallback — reliable, always available */
+  FALLBACK: "deepseek/deepseek-chat-v3-0324:free",
 } as const;
 
 export type ORModel = (typeof OR_MODELS)[keyof typeof OR_MODELS];
@@ -35,6 +35,8 @@ export interface OROptions {
 
 const MAX_RETRIES = 2;
 const RETRY_ON = new Set([429, 502, 503, 524]);
+// These trigger immediate fallback — no point retrying
+const FALLBACK_ON = new Set([404, 400]);
 
 function headers() {
   return {
@@ -117,11 +119,15 @@ async function callOnce(
   }
 
   if (!res.ok) {
+    const txt = await res.text().catch(() => "");
+    // 404/400 = endpoint missing — skip retries, let orGenerate() try fallback immediately
+    if (FALLBACK_ON.has(res.status)) {
+      throw new Error(`OpenRouter ${res.status}: ${txt.slice(0, 300)}`);
+    }
     if (RETRY_ON.has(res.status) && attempt < MAX_RETRIES) {
       await sleep(Math.pow(2, attempt) * 800);
       return callOnce(model, msgs, opts, attempt + 1);
     }
-    const txt = await res.text().catch(() => "");
     throw new Error(`OpenRouter ${res.status}: ${txt.slice(0, 300)}`);
   }
 
