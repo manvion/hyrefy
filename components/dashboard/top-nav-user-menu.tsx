@@ -5,9 +5,10 @@ import { useClerk } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { CreditCard, Settings, LogOut, Crown } from "lucide-react";
+import { CreditCard, Settings, LogOut, Crown, Flag } from "lucide-react";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 import { cn } from "@/lib/utils/cn";
+import { ReportModal } from "@/components/feedback/report-modal";
 
 interface Props {
   userId: string;
@@ -56,6 +57,7 @@ export function TopNavUserMenu({ userId, isPremium }: Props) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
 
   if (isDemoMode) return <DemoUserMenu userId={userId} />;
 
@@ -111,6 +113,12 @@ export function TopNavUserMenu({ userId, isPremium }: Props) {
               className="flex items-center gap-2.5 px-3 py-2 hover:bg-accent transition-colors text-foreground">
               <Settings className="h-3.5 w-3.5 text-muted-foreground" />Settings
             </Link>
+            <button
+              onClick={() => { setOpen(false); setReportOpen(true); }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-accent transition-colors text-foreground"
+            >
+              <Flag className="h-3.5 w-3.5 text-muted-foreground" />Report Issue
+            </button>
             <div className="border-t border-border/30 mt-1 pt-1">
               <button
                 onClick={handleSignOut}
@@ -123,6 +131,15 @@ export function TopNavUserMenu({ userId, isPremium }: Props) {
             </div>
           </div>
         </>
+      )}
+
+      {reportOpen && (
+        <ReportModal
+          userName={displayName}
+          userEmail={email}
+          userId={userId}
+          onClose={() => setReportOpen(false)}
+        />
       )}
     </div>
   );

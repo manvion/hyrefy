@@ -159,8 +159,8 @@ export function AnalyzeClient() {
               className={cn(
                 "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97]",
                 inputMode === mode
-                  ? "bg-background shadow-sm text-foreground border border-border/40"
-                  : "text-muted-foreground hover:text-foreground hover:bg-background/50 disabled:opacity-40 disabled:cursor-not-allowed active:bg-background/70"
+                  ? "bg-primary/15 text-primary border border-primary/30 font-semibold"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:cursor-not-allowed"
               )}
             >
               <Icon className="h-3.5 w-3.5" />
