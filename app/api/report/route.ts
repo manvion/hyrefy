@@ -33,11 +33,13 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Attempt email notification — best effort, non-blocking
+    // Attempt email notification — best effort, report emailSent status back
     const apiKey   = process.env.RESEND_API_KEY;
     const reportTo = process.env.REPORT_TO_EMAIL;
 
-    console.log(`[report] DB saved. Email config: apiKey=${apiKey ? "set("+apiKey.length+"chars)" : "MISSING"}, reportTo=${reportTo ? "set" : "MISSING"}`);
+    console.log(`[report] DB saved. apiKey=${apiKey ? "set("+apiKey.length+"chars)" : "MISSING"}, reportTo=${reportTo ? "set" : "MISSING"}`);
+
+    let emailSent = false;
 
     if (apiKey && reportTo) {
       try {
@@ -99,15 +101,17 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`,
         });
+
         console.log(`[report] Resend result:`, JSON.stringify(emailResult));
+        emailSent = !emailResult.error;
       } catch (emailErr) {
-        console.error("[report] Email notification failed (report saved):", emailErr);
+        console.error("[report] Email failed (report saved):", emailErr);
       }
     } else {
-      console.warn("[report] Email skipped — RESEND_API_KEY or REPORT_TO_EMAIL not set");
+      console.warn("[report] Email skipped — env vars missing");
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, emailSent });
   } catch (err) {
     console.error("Report submission error:", err);
     return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
