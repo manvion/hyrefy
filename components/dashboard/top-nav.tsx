@@ -90,7 +90,7 @@ export function TopNav({ userId, isPremium }: Props) {
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "relative flex items-center gap-1.5 px-3 pb-[11px] pt-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 border-b-2",
+                    "relative flex items-center gap-1.5 px-3 pb-[11px] pt-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 border-b-2 active:opacity-70",
                     isActive
                       ? "border-primary text-primary"
                       : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
