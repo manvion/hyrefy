@@ -20,7 +20,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <div className="flex flex-col min-h-screen bg-background">
       <TopNav userId={userId} isPremium={isPremium} />
       <main className="flex-1 overflow-y-auto">
-        <div className="w-full max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-6 pb-8 w-full">
           {children}
         </div>
       </main>

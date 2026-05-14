@@ -6,7 +6,7 @@ import { getAuthUserId } from "@/lib/utils/auth";
 import { db } from "@/lib/db";
 import { GenerateClient } from "@/components/generate/generate-client";
 import { Button } from "@/components/ui/button";
-import { Upload } from "lucide-react";
+import { Upload, Sparkles } from "lucide-react";
 import { isDemoMode } from "@/lib/utils/demo-mode";
 
 const DEMO_RESUME = `JANE SMITH
@@ -54,19 +54,17 @@ export default async function GeneratePage() {
         include: { subscription: true },
       });
       if (user) {
-        const master = await (db as any).resume.findFirst({
-          where: { userId: user.id, isMaster: true },
-          orderBy: { createdAt: "desc" },
+        // Single query: prefer master (isMaster desc), then most recent
+        const resume = await db.resume.findFirst({
+          where: { userId: user.id },
+          orderBy: [
+            { isMaster: "desc" },
+            { updatedAt: "desc" },
+          ],
         });
-        if (!master) {
-          const any = await (db as any).resume.findFirst({
-            where: { userId: user.id },
-            orderBy: { createdAt: "desc" },
-          });
-          if (any) { masterResumeText = any.rawText || ""; masterResumeId = any.id; }
-        } else {
-          masterResumeText = master.rawText || "";
-          masterResumeId = master.id;
+        if (resume?.rawText) {
+          masterResumeText = resume.rawText;
+          masterResumeId = resume.id;
         }
 
         if (user.subscription) {
@@ -75,7 +73,9 @@ export default async function GeneratePage() {
           scansLimit = isPremium ? 9999 : 2;
         }
       }
-    } catch { /* DB not configured */ }
+    } catch (e) {
+      console.error("[GeneratePage] resume fetch error:", e);
+    }
   }
 
   if (!masterResumeText) {
@@ -101,13 +101,26 @@ export default async function GeneratePage() {
   }
 
   return (
-    <GenerateClient
-      masterResumeText={masterResumeText}
-      masterResumeId={masterResumeId}
-      defaultCountry="CA"
-      scansUsed={scansUsed}
-      scansLimit={scansLimit}
-      isPremium={isPremium}
-    />
+    <div className="space-y-5 max-w-6xl mx-auto">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+          <Sparkles className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold">Improve Resume</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Paste a job description — get a tailored resume + cover letter in ~20 seconds
+          </p>
+        </div>
+      </div>
+      <GenerateClient
+        masterResumeText={masterResumeText}
+        masterResumeId={masterResumeId}
+        defaultCountry="CA"
+        scansUsed={scansUsed}
+        scansLimit={scansLimit}
+        isPremium={isPremium}
+      />
+    </div>
   );
 }

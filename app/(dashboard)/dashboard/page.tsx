@@ -60,9 +60,12 @@ export default async function DashboardPage() {
     buildsUsed = (user.subscription as any)?.buildsUsed ?? 0;
 
     const cutoff = sixMonthsAgo();
-    const [masterResume, anyResume, scans, count] = await Promise.all([
-      (db as any).resume.findFirst({ where: { userId: user.id, isMaster: true }, select: { fileName: true } }),
-      (db as any).resume.findFirst({ where: { userId: user.id }, select: { fileName: true } }),
+    const [resume, scans, count] = await Promise.all([
+      db.resume.findFirst({
+        where: { userId: user.id },
+        orderBy: [{ isMaster: "desc" }, { updatedAt: "desc" }],
+        select: { fileName: true },
+      }),
       db.resumeScan.findMany({
         where: { userId: user.id, createdAt: { gte: cutoff } },
         orderBy: { createdAt: "desc" },
@@ -72,7 +75,6 @@ export default async function DashboardPage() {
       db.resumeScan.count({ where: { userId: user.id, createdAt: { gte: cutoff } } }),
     ]);
 
-    const resume = masterResume ?? anyResume;
     if (resume) { hasMasterResume = true; masterResumeFile = resume.fileName || ""; }
     recentScans = scans;
     totalGenerations = count;
@@ -86,7 +88,7 @@ export default async function DashboardPage() {
   const scansRemaining = Math.max(0, scansLimit - scansUsed);
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 max-w-5xl mx-auto">
 
       {/* Master Resume Status */}
       <Card className={`border ${hasMasterResume ? "border-emerald-500/25 bg-emerald-500/5" : "border-primary/25 bg-primary/5"}`}>

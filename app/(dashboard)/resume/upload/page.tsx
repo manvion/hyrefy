@@ -22,24 +22,21 @@ export default async function UploadPage() {
     try {
       const user = await db.user.findUnique({ where: { clerkId: userId } });
       if (user) {
-        const master = await (db as any).resume.findFirst({
-          where: { userId: user.id, isMaster: true },
-          orderBy: { updatedAt: "desc" },
+        // Single query: prefer master (isMaster desc), then most recent
+        const resume = await db.resume.findFirst({
+          where: { userId: user.id },
+          orderBy: [
+            { isMaster: "desc" },
+            { updatedAt: "desc" },
+          ],
           select: { id: true, fileName: true, rawText: true, createdAt: true, updatedAt: true },
         });
-        if (master) {
-          existingResume = master;
-        } else {
-          const any = await (db as any).resume.findFirst({
-            where: { userId: user.id },
-            orderBy: { updatedAt: "desc" },
-            select: { id: true, fileName: true, rawText: true, createdAt: true, updatedAt: true },
-          });
-          if (any) existingResume = any;
+        if (resume && resume.rawText && resume.rawText.trim().length > 0) {
+          existingResume = { ...resume, rawText: resume.rawText };
         }
       }
-    } catch {
-      // DB not configured
+    } catch (e) {
+      console.error("[UploadPage] resume fetch error:", e);
     }
   }
 

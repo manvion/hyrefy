@@ -1,23 +1,19 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { cn } from "@/lib/utils/cn";
-import { isDemoMode } from "@/lib/utils/demo-mode";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Upload, Sparkles, FileText, FileSearch,
   KanbanSquare, History, BrainCircuit, Crown, Menu, X,
-  CreditCard, Settings, LogOut, Sun, Moon, ChevronDown,
-  Image as ImageIcon,
+  CreditCard, Settings, Sun, Moon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import Image from "next/image";
 
-// Load Clerk hooks only on client
 const ClerkUserMenu = dynamic(
   () => import("@/components/dashboard/top-nav-user-menu").then((m) => m.TopNavUserMenu),
   { ssr: false, loading: () => <div className="h-8 w-8 rounded-full bg-muted animate-pulse" /> }
@@ -64,25 +60,27 @@ export function TopNav({ userId, isPremium }: Props) {
   const cleanPath = stripUserId(pathname);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur-md shrink-0">
-        <div className="flex h-14 items-center gap-2 px-4 sm:px-6">
+      {/* ── Desktop nav ──────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/98 backdrop-blur-md shrink-0">
+        <div className="flex h-[52px] items-stretch px-4 sm:px-6">
 
-          {/* Left: Logo */}
-          <Link
-            href={`/dashboard/${userId}`}
-            className="flex items-center gap-2.5 shrink-0 mr-4 group"
-          >
-            <HyreLogo size={28} className="transition-transform group-hover:scale-105" />
-            <span className="font-bold text-base tracking-tight hidden sm:inline">Hyrefy</span>
-          </Link>
+          {/* Left: Logo (vertically centered) */}
+          <div className="flex items-center shrink-0 pr-6 border-r border-border/30 mr-2">
+            <Link
+              href={`/dashboard/${userId}`}
+              className="flex items-center gap-2 group"
+            >
+              <HyreLogo size={26} />
+              <span className="font-bold text-[15px] tracking-tight hidden sm:inline">Hyrefy</span>
+            </Link>
+          </div>
 
-          {/* Center: Nav tabs (desktop) */}
-          <nav className="hidden lg:flex flex-1 items-center gap-0.5 overflow-x-auto no-scrollbar">
+          {/* Center: Nav tabs – sit at bottom with underline indicator */}
+          <nav className="hidden lg:flex flex-1 items-end overflow-x-auto no-scrollbar gap-0 -mb-px">
             {navItems.map((item) => {
               const isActive =
                 cleanPath === item.href ||
@@ -92,10 +90,10 @@ export function TopNav({ userId, isPremium }: Props) {
                   key={item.href}
                   href={`${item.href}/${userId}`}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150",
+                    "relative flex items-center gap-1.5 px-3 pb-[11px] pt-2 text-[13px] font-medium whitespace-nowrap transition-all duration-150 border-b-2",
                     isActive
-                      ? "bg-primary/10 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground hover:border-border/60"
                   )}
                 >
                   <item.icon className="h-3.5 w-3.5 shrink-0" />
@@ -105,19 +103,17 @@ export function TopNav({ userId, isPremium }: Props) {
             })}
           </nav>
 
-          {/* Right: actions */}
-          <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          {/* Right: Actions (vertically centered) */}
+          <div className="flex items-center gap-1.5 shrink-0 pl-4 ml-auto">
             <ThemeToggle />
-
             {!isPremium && (
-              <Button asChild size="sm" variant="gradient" className="hidden sm:flex h-7 text-xs gap-1">
+              <Button asChild size="sm" variant="gradient" className="hidden sm:flex h-7 text-xs gap-1 px-2.5">
                 <Link href={`/billing/${userId}`}>
                   <Crown className="h-3 w-3" />
                   Upgrade
                 </Link>
               </Button>
             )}
-
             <ClerkUserMenu userId={userId} isPremium={isPremium} />
 
             {/* Mobile hamburger */}
@@ -134,7 +130,7 @@ export function TopNav({ userId, isPremium }: Props) {
       {/* Mobile overlay */}
       {mobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -142,11 +138,11 @@ export function TopNav({ userId, isPremium }: Props) {
       {/* Mobile drawer */}
       <div
         className={cn(
-          "lg:hidden fixed top-14 left-0 right-0 z-50 bg-background border-b border-border/40 shadow-xl transition-all duration-200 origin-top",
+          "lg:hidden fixed top-[52px] left-0 right-0 z-50 bg-background border-b border-border/40 shadow-2xl transition-all duration-200 origin-top",
           mobileOpen ? "opacity-100 scale-y-100 pointer-events-auto" : "opacity-0 scale-y-95 pointer-events-none"
         )}
       >
-        <nav className="px-4 py-3 space-y-1 max-h-[calc(100vh-3.5rem)] overflow-y-auto">
+        <nav className="px-4 py-3 space-y-0.5 max-h-[calc(100vh-52px)] overflow-y-auto">
           {navItems.map((item) => {
             const isActive =
               cleanPath === item.href ||
@@ -158,9 +154,7 @@ export function TopNav({ userId, isPremium }: Props) {
                 onClick={() => setMobileOpen(false)}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-foreground hover:bg-accent"
+                  isActive ? "bg-primary/10 text-primary" : "text-foreground hover:bg-accent"
                 )}
               >
                 <item.icon className="h-4 w-4 shrink-0" />
@@ -168,32 +162,19 @@ export function TopNav({ userId, isPremium }: Props) {
               </Link>
             );
           })}
-
-          <div className="pt-2 mt-2 border-t border-border/30 flex flex-col gap-1">
-            <Link
-              href={`/billing/${userId}`}
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors"
-            >
-              <CreditCard className="h-4 w-4 shrink-0" />
-              Billing
+          <div className="pt-2 mt-2 border-t border-border/30 space-y-0.5">
+            <Link href={`/billing/${userId}`} onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors">
+              <CreditCard className="h-4 w-4 shrink-0" />Billing
             </Link>
-            <Link
-              href={`/settings/${userId}`}
-              onClick={() => setMobileOpen(false)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors"
-            >
-              <Settings className="h-4 w-4 shrink-0" />
-              Settings
+            <Link href={`/settings/${userId}`} onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-foreground hover:bg-accent transition-colors">
+              <Settings className="h-4 w-4 shrink-0" />Settings
             </Link>
             {!isPremium && (
-              <Link
-                href={`/billing/${userId}`}
-                onClick={() => setMobileOpen(false)}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors"
-              >
-                <Crown className="h-4 w-4 shrink-0" />
-                Upgrade to Premium
+              <Link href={`/billing/${userId}`} onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-primary bg-primary/10 hover:bg-primary/20 transition-colors">
+                <Crown className="h-4 w-4 shrink-0" />Upgrade to Premium
               </Link>
             )}
           </div>
