@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
 const typeLabel: Record<string, string> = {
   bug:         "Bug Report",
@@ -17,21 +17,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Description is required" }, { status: 400 });
     }
 
-    const gmailUser = process.env.GMAIL_USER;
-    const gmailPass = process.env.GMAIL_APP_PASSWORD;
-    const reportTo  = process.env.REPORT_TO_EMAIL;
+    const apiKey   = process.env.RESEND_API_KEY;
+    const reportTo = process.env.REPORT_TO_EMAIL;
 
-    if (!gmailUser || !gmailPass || !reportTo) {
-      console.error("Email env vars not configured");
-      return NextResponse.json({ error: "Email not configured" }, { status: 500 });
+    if (!apiKey || !reportTo) {
+      console.error("RESEND_API_KEY or REPORT_TO_EMAIL not configured");
+      return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
     }
 
     const resolvedTitle = title?.trim() || typeLabel[type] || "User Report";
-
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: gmailUser, pass: gmailPass },
-    });
+    const resend = new Resend(apiKey);
 
     const now = new Date().toLocaleString("en-CA", {
       timeZone: "America/Toronto",
@@ -39,7 +34,11 @@ export async function POST(request: NextRequest) {
       timeStyle: "short",
     });
 
-    const html = `
+    const { error } = await resend.emails.send({
+      from: "Hyrefy Reports <onboarding@resend.dev>",
+      to: [reportTo],
+      subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
+      html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -48,7 +47,6 @@ export async function POST(request: NextRequest) {
     <h1 style="color: #fff; margin: 0; font-size: 20px;">🚨 Hyrefy User Report</h1>
     <p style="color: #cce4ff; margin: 4px 0 0; font-size: 13px;">${now}</p>
   </div>
-
   <div style="border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px; padding: 24px;">
     <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
       <tr style="background: #f5f5f5;">
@@ -56,7 +54,7 @@ export async function POST(request: NextRequest) {
         <td style="padding: 8px 12px;">${typeLabel[type] ?? type}</td>
       </tr>
       <tr>
-        <td style="padding: 8px 12px; font-weight: bold;">Title</td>
+        <td style="padding: 8px 12px; font-weight: bold;">Summary</td>
         <td style="padding: 8px 12px;">${resolvedTitle}</td>
       </tr>
       <tr style="background: #f5f5f5;">
@@ -76,27 +74,24 @@ export async function POST(request: NextRequest) {
         <td style="padding: 8px 12px;">${contactPhone?.trim() || "Not provided"}</td>
       </tr>
     </table>
-
     <div style="margin-top: 20px;">
       <p style="font-weight: bold; font-size: 14px; margin-bottom: 8px;">Description</p>
       <div style="background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 6px; padding: 14px; font-size: 14px; white-space: pre-wrap; line-height: 1.6;">${description}</div>
     </div>
   </div>
-
-  <p style="font-size: 11px; color: #999; margin-top: 16px; text-align: center;">Sent automatically from Hyrefy — do not reply to this email</p>
+  <p style="font-size: 11px; color: #999; margin-top: 16px; text-align: center;">Sent automatically from Hyrefy</p>
 </body>
-</html>`;
-
-    await transporter.sendMail({
-      from: `"Hyrefy Reports" <${gmailUser}>`,
-      to: reportTo,
-      subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
-      html,
+</html>`,
     });
+
+    if (error) {
+      console.error("Resend error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Report email error:", err);
+    console.error("Report error:", err);
     return NextResponse.json({ error: "Failed to send report" }, { status: 500 });
   }
 }
