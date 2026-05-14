@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
+import { db } from "@/lib/db";
 
 const typeLabel: Record<string, string> = {
   bug:         "Bug Report",
@@ -17,28 +17,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Description is required" }, { status: 400 });
     }
 
+    const resolvedTitle = title?.trim() || typeLabel[type] || "User Report";
+
+    // Save to database first — always works
+    const dbc = db as any;
+    await dbc.userReport.create({
+      data: {
+        type:        type || "other",
+        title:       resolvedTitle,
+        description: description.trim(),
+        contactPhone: contactPhone?.trim() || null,
+        userName:    userName || null,
+        userEmail:   userEmail || null,
+        clerkId:     userId || null,
+      },
+    });
+
+    // Attempt email notification — best effort, non-blocking
     const apiKey   = process.env.RESEND_API_KEY;
     const reportTo = process.env.REPORT_TO_EMAIL;
 
-    if (!apiKey || !reportTo) {
-      console.error("RESEND_API_KEY or REPORT_TO_EMAIL not configured");
-      return NextResponse.json({ error: "Email service not configured" }, { status: 500 });
-    }
+    if (apiKey && reportTo) {
+      try {
+        const { Resend } = await import("resend");
+        const resend = new Resend(apiKey);
 
-    const resolvedTitle = title?.trim() || typeLabel[type] || "User Report";
-    const resend = new Resend(apiKey);
+        const now = new Date().toLocaleString("en-CA", {
+          timeZone: "America/Toronto",
+          dateStyle: "full",
+          timeStyle: "short",
+        });
 
-    const now = new Date().toLocaleString("en-CA", {
-      timeZone: "America/Toronto",
-      dateStyle: "full",
-      timeStyle: "short",
-    });
-
-    const { error } = await resend.emails.send({
-      from: "Hyrefy Reports <onboarding@resend.dev>",
-      to: [reportTo],
-      subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
-      html: `
+        await resend.emails.send({
+          from: "Hyrefy Reports <onboarding@resend.dev>",
+          to: [reportTo],
+          subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
+          html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /></head>
@@ -82,16 +96,16 @@ export async function POST(request: NextRequest) {
   <p style="font-size: 11px; color: #999; margin-top: 16px; text-align: center;">Sent automatically from Hyrefy</p>
 </body>
 </html>`,
-    });
-
-    if (error) {
-      console.error("Resend error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+        });
+      } catch (emailErr) {
+        // Email failed but report is already saved — log and continue
+        console.error("Email notification failed (report saved):", emailErr);
+      }
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error("Report error:", err);
-    return NextResponse.json({ error: "Failed to send report" }, { status: 500 });
+    console.error("Report submission error:", err);
+    return NextResponse.json({ error: "Failed to save report" }, { status: 500 });
   }
 }

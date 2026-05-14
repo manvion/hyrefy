@@ -184,6 +184,21 @@ model ResumeRoast {
   @@map("resume_roasts")
 }
 
+model UserReport {
+  id           String   @id @default(cuid())
+  type         String
+  title        String
+  description  String   @db.Text
+  contactPhone String?
+  userName     String?
+  userEmail    String?
+  clerkId      String?
+  status       String   @default("new")
+  createdAt    DateTime @default(now())
+
+  @@map("user_reports")
+}
+
 model RecruiterWaitlist {
   id        String   @id @default(cuid())
   email     String   @unique

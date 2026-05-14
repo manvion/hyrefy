@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, BarChart3, CreditCard, TrendingUp, Building2, Bell, FileText, Clock } from "lucide-react";
+import { Users, BarChart3, CreditCard, TrendingUp, Building2, Bell, FileText, Clock, Flag } from "lucide-react";
 import Link from "next/link";
 import { AdminLogout } from "@/components/admin/admin-logout";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
@@ -16,7 +16,7 @@ export default async function AdminDashboardPage({
 }) {
   await requireAdmin();
   const { tab } = await searchParams;
-  const activeTab = tab === "employers" ? "employers" : "job-seekers";
+  const activeTab = tab === "employers" ? "employers" : tab === "reports" ? "reports" : "job-seekers";
 
   let jobSeekerStats = {
     totalUsers: 0,
@@ -65,6 +65,16 @@ export default async function AdminDashboardPage({
     };
   } catch {
     // DB not configured or migration not run
+  }
+
+  let reports: { id: string; type: string; title: string; description: string; contactPhone: string | null; userName: string | null; userEmail: string | null; status: string; createdAt: Date }[] = [];
+  try {
+    reports = await (db as any).userReport.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+  } catch {
+    // table not yet migrated
   }
 
   const conversionRate = jobSeekerStats.totalUsers
@@ -124,6 +134,22 @@ export default async function AdminDashboardPage({
               {employerStats.totalWaitlist > 0 && (
                 <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-bold">
                   {employerStats.totalWaitlist}
+                </span>
+              )}
+            </Link>
+            <Link
+              href="/admin/dashboard?tab=reports"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "reports"
+                  ? "bg-red-500/10 text-red-400 border border-red-500/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+              }`}
+            >
+              <Flag className="h-4 w-4" />
+              User Reports
+              {reports.filter(r => r.status === "new").length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 text-[11px] font-bold">
+                  {reports.filter(r => r.status === "new").length}
                 </span>
               )}
             </Link>
@@ -337,6 +363,65 @@ export default async function AdminDashboardPage({
                 )}
               </CardContent>
             </Card>
+          </>
+        )}
+
+        {/* ── REPORTS TAB ── */}
+        {activeTab === "reports" && (
+          <>
+            <div>
+              <h1 className="text-xl font-bold">User Reports</h1>
+              <p className="text-muted-foreground text-sm mt-0.5">Issues and feedback submitted by users</p>
+            </div>
+
+            {reports.length > 0 ? (
+              <div className="space-y-3">
+                {reports.map((report) => {
+                  const typeColors: Record<string, string> = {
+                    bug:         "text-red-400 bg-red-500/10 border-red-500/20",
+                    feature:     "text-amber-400 bg-amber-500/10 border-amber-500/20",
+                    performance: "text-blue-400 bg-blue-500/10 border-blue-500/20",
+                    ux:          "text-purple-400 bg-purple-500/10 border-purple-500/20",
+                    other:       "text-muted-foreground bg-muted/30 border-border/40",
+                  };
+                  const typeNames: Record<string, string> = {
+                    bug: "Bug", feature: "Feature", performance: "Performance", ux: "UI/UX", other: "Other",
+                  };
+                  return (
+                    <Card key={report.id} className={`border-border/50 bg-card/30 ${report.status === "new" ? "border-l-4 border-l-red-400" : ""}`}>
+                      <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-4 mb-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${typeColors[report.type] ?? typeColors.other}`}>
+                              {typeNames[report.type] ?? report.type}
+                            </span>
+                            <h3 className="text-sm font-semibold text-foreground">{report.title}</h3>
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1 shrink-0">
+                            <Clock className="h-3 w-3" />
+                            {new Date(report.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        </div>
+                        <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed mb-3">{report.description}</p>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground border-t border-border/20 pt-3">
+                          {report.userName && <span><strong>Name:</strong> {report.userName}</span>}
+                          {report.userEmail && <span><strong>Email:</strong> {report.userEmail}</span>}
+                          {report.contactPhone && <span><strong>Phone:</strong> {report.contactPhone}</span>}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <Card className="border-border/50 bg-card/30">
+                <CardContent className="py-14 text-center">
+                  <Flag className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No reports yet.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Reports submitted by users appear here.</p>
+                </CardContent>
+              </Card>
+            )}
           </>
         )}
       </main>
