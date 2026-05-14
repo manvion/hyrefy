@@ -57,11 +57,11 @@ export default async function GeneratePage() {
             orderBy: { createdAt: "desc" },
           });
           if (any) {
-            masterResumeText = any.extractedText || "";
+            masterResumeText = any.rawText || "";
             masterResumeId = any.id;
           }
         } else {
-          masterResumeText = master.extractedText || "";
+          masterResumeText = master.rawText || "";
           masterResumeId = master.id;
         }
       }
