@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import {
   Upload, Sparkles, History, FileText, TrendingUp, Clock,
   ArrowRight, CheckCircle2, Target, Download, ChevronRight,
-  BarChart3, Briefcase, Globe,
+  BarChart3, Briefcase, Globe, Crown, Zap, PenSquare,
+  FileSearch, BrainCircuit,
 } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/ai/countries";
 
@@ -19,6 +20,13 @@ const sixMonthsAgo = () => {
   d.setMonth(d.getMonth() - 6);
   return d;
 };
+
+function atsColor(score: number) {
+  if (score >= 80) return "text-emerald-400";
+  if (score >= 65) return "text-blue-400";
+  if (score >= 50) return "text-amber-400";
+  return "text-red-400";
+}
 
 export default async function DashboardPage() {
   const userId = await getAuthUserId();
@@ -30,6 +38,9 @@ export default async function DashboardPage() {
   let isPremium = false;
   let totalGenerations = 0;
   let bestScore = 0;
+  let scansUsed = 0;
+  let scansLimit = 2;
+  let buildsUsed = 0;
 
   try {
     const user = await db.user.upsert({
@@ -38,25 +49,25 @@ export default async function DashboardPage() {
       create: {
         clerkId: userId,
         email: `${userId}@placeholder.hyrefy.com`,
-        subscription: { create: { scansUsed: 0, scansLimit: 3 } },
+        subscription: { create: { scansUsed: 0, scansLimit: 2 } },
       },
       include: { subscription: true },
     });
 
     isPremium = user.subscription?.status === "PREMIUM";
-    const cutoff = sixMonthsAgo();
+    scansUsed = user.subscription?.scansUsed ?? 0;
+    scansLimit = isPremium ? 9999 : 2;
+    buildsUsed = (user.subscription as any)?.buildsUsed ?? 0;
 
+    const cutoff = sixMonthsAgo();
     const [masterResume, anyResume, scans, count] = await Promise.all([
       (db as any).resume.findFirst({ where: { userId: user.id, isMaster: true }, select: { fileName: true } }),
       (db as any).resume.findFirst({ where: { userId: user.id }, select: { fileName: true } }),
       db.resumeScan.findMany({
         where: { userId: user.id, createdAt: { gte: cutoff } },
         orderBy: { createdAt: "desc" },
-        take: 5,
-        select: {
-          id: true, jobTitle: true, company: true, atsScore: true,
-          createdAt: true, jobCountry: true, aiResults: true,
-        },
+        take: 4,
+        select: { id: true, jobTitle: true, company: true, atsScore: true, createdAt: true, jobCountry: true, aiResults: true },
       }),
       db.resumeScan.count({ where: { userId: user.id, createdAt: { gte: cutoff } } }),
     ]);
@@ -66,23 +77,23 @@ export default async function DashboardPage() {
     recentScans = scans;
     totalGenerations = count;
     bestScore = scans.reduce((max: number, s: any) => Math.max(max, s.atsScore || 0), 0);
-  } catch {
-    // DB not configured — demo state
-  }
+  } catch { /* DB not configured — demo state */ }
 
   const avgScore = recentScans.length
     ? Math.round(recentScans.reduce((a: number, s: any) => a + (s.atsScore || 0), 0) / recentScans.length)
     : 0;
 
+  const scansRemaining = Math.max(0, scansLimit - scansUsed);
+
   return (
     <div className="space-y-6 max-w-5xl">
 
       {/* Master Resume Status */}
-      <Card className={`border ${hasMasterResume ? "border-emerald-500/30 bg-emerald-500/5" : "border-primary/30 bg-primary/5"}`}>
+      <Card className={`border ${hasMasterResume ? "border-emerald-500/25 bg-emerald-500/5" : "border-primary/25 bg-primary/5"}`}>
         <CardContent className="p-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${hasMasterResume ? "bg-emerald-500/15 border border-emerald-500/30" : "bg-primary/15 border border-primary/30"}`}>
+              <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${hasMasterResume ? "bg-emerald-500/15 border border-emerald-500/25" : "bg-primary/15 border border-primary/25"}`}>
                 {hasMasterResume ? <CheckCircle2 className="h-5 w-5 text-emerald-400" /> : <Upload className="h-5 w-5 text-primary" />}
               </div>
               <div>
@@ -90,18 +101,18 @@ export default async function DashboardPage() {
                   {hasMasterResume ? masterResumeFile || "Master Resume" : "Upload Your Master Resume"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {hasMasterResume ? "Ready — generate tailored resumes for any job" : "Upload once, tailor for every job you apply to"}
+                  {hasMasterResume ? "Ready — tailor it for any job in seconds" : "Upload once, tailor for every job you apply to"}
                 </p>
               </div>
             </div>
             <Button asChild variant={hasMasterResume ? "outline" : "gradient"} size="sm" className="shrink-0">
-              <Link href="/resume/upload">{hasMasterResume ? "Update" : "Upload Now"}</Link>
+              <Link href="/resume/upload">{hasMasterResume ? "View / Update" : "Upload Now"}</Link>
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Generate CTA — only when resume is ready */}
+      {/* Generate CTA */}
       {hasMasterResume && (
         <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent overflow-hidden relative">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-500/10 via-transparent to-transparent pointer-events-none" />
@@ -111,7 +122,7 @@ export default async function DashboardPage() {
                 <Sparkles className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="font-bold text-base">Generate a tailored resume</p>
+                <p className="font-bold text-base">Improve My Resume</p>
                 <p className="text-sm text-muted-foreground mt-0.5">
                   Paste a job description — get a tailored resume + cover letter in ~20 seconds
                 </p>
@@ -119,7 +130,7 @@ export default async function DashboardPage() {
             </div>
             <Button asChild variant="gradient" size="lg" className="shrink-0">
               <Link href="/generate">
-                <Sparkles className="mr-2 h-4 w-4" /> Generate
+                <Sparkles className="mr-2 h-4 w-4" /> Improve
                 <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
@@ -133,7 +144,7 @@ export default async function DashboardPage() {
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-2">
               <Briefcase className="h-3.5 w-3.5 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Applications</p>
+              <p className="text-xs text-muted-foreground">Generations</p>
             </div>
             <p className="text-2xl font-bold">{totalGenerations}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">last 6 months</p>
@@ -145,8 +156,8 @@ export default async function DashboardPage() {
               <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">Avg ATS Score</p>
             </div>
-            <p className="text-2xl font-bold">{avgScore > 0 ? `${avgScore}%` : "—"}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">across all generations</p>
+            <p className={`text-2xl font-bold ${avgScore > 0 ? atsColor(avgScore) : ""}`}>{avgScore > 0 ? `${avgScore}%` : "—"}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">across generations</p>
           </CardContent>
         </Card>
         <Card className="border-border/50 bg-card/30">
@@ -155,8 +166,8 @@ export default async function DashboardPage() {
               <Target className="h-3.5 w-3.5 text-muted-foreground" />
               <p className="text-xs text-muted-foreground">Best Score</p>
             </div>
-            <p className="text-2xl font-bold text-emerald-400">{bestScore > 0 ? `${bestScore}%` : "—"}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">highest ATS achieved</p>
+            <p className={`text-2xl font-bold ${bestScore > 0 ? atsColor(bestScore) : ""}`}>{bestScore > 0 ? `${bestScore}%` : "—"}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">highest ATS</p>
           </CardContent>
         </Card>
         <Card className="border-border/50 bg-card/30">
@@ -177,50 +188,73 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
+      {/* Usage indicators (free users only) */}
+      {!isPremium && (
+        <Card className="border-border/50 bg-card/30">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" />
+                Monthly Usage
+              </p>
+              <Button asChild size="sm" variant="outline" className="h-7 text-xs gap-1">
+                <Link href="/billing"><Crown className="h-3 w-3" />Upgrade</Link>
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: "Resume Improvements", used: scansUsed, limit: 2 },
+                { label: "Resume Builds", used: buildsUsed, limit: 1 },
+                { label: "Interview AI", used: 0, limit: 1 },
+              ].map(item => {
+                const pct = Math.min(100, (item.used / item.limit) * 100);
+                const remaining = Math.max(0, item.limit - item.used);
+                return (
+                  <div key={item.label} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground">{item.label}</span>
+                      <span className="text-xs font-medium">{item.used}/{item.limit}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-destructive" : pct >= 50 ? "bg-amber-400" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      {remaining === 0 ? "Limit reached" : `${remaining} remaining`}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Quick actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <Link href="/generate" className="group">
-          <Card className="border-border/50 bg-card/20 hover:bg-card/50 hover:border-primary/30 transition-all h-full cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">New Generation</p>
-                <p className="text-xs text-muted-foreground">Resume + cover letter</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-primary transition-colors shrink-0" />
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/history" className="group">
-          <Card className="border-border/50 bg-card/20 hover:bg-card/50 hover:border-primary/30 transition-all h-full cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
-                <Download className="h-4 w-4 text-blue-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">Download History</p>
-                <p className="text-xs text-muted-foreground">PDF or text, all resumes</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-primary transition-colors shrink-0" />
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/resume/upload" className="group">
-          <Card className="border-border/50 bg-card/20 hover:bg-card/50 hover:border-primary/30 transition-all h-full cursor-pointer">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-9 w-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
-                <FileText className="h-4 w-4 text-violet-400" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold">Master Resume</p>
-                <p className="text-xs text-muted-foreground">{hasMasterResume ? "View or update" : "Upload to get started"}</p>
-              </div>
-              <ArrowRight className="h-4 w-4 text-muted-foreground ml-auto group-hover:text-primary transition-colors shrink-0" />
-            </CardContent>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { href: "/generate",       icon: Sparkles,    label: "Improve Resume",   desc: "Resume + cover letter",  color: "bg-primary/10 border-primary/20 text-primary" },
+          { href: "/build",          icon: PenSquare,   label: "Build New Resume", desc: "Start from scratch",     color: "bg-violet-500/10 border-violet-500/20 text-violet-400" },
+          { href: "/analyze",        icon: FileSearch,  label: "ATS Analyzer",     desc: "Score your resume",      color: "bg-blue-500/10 border-blue-500/20 text-blue-400" },
+          { href: "/interview-prep", icon: BrainCircuit,label: "Interview AI",     desc: "Practice questions",     color: "bg-amber-500/10 border-amber-500/20 text-amber-400" },
+        ].map(item => (
+          <Link key={item.href} href={item.href} className="group">
+            <Card className="border-border/50 bg-card/20 hover:bg-card/50 hover:border-primary/30 transition-all h-full cursor-pointer">
+              <CardContent className="p-4 flex flex-col gap-2.5">
+                <div className={`h-9 w-9 rounded-lg border flex items-center justify-center shrink-0 ${item.color}`}>
+                  <item.icon className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">{item.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                </div>
+                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors mt-auto" />
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
 
       {/* Recent generations */}
@@ -257,8 +291,8 @@ export default async function DashboardPage() {
                     <div className="flex items-center gap-3 shrink-0">
                       {scan.atsScore > 0 && (
                         <div className="flex items-center gap-1 text-sm">
-                          <TrendingUp className="h-3.5 w-3.5 text-emerald-400" />
-                          <span className="font-bold text-emerald-400">{scan.atsScore}%</span>
+                          <TrendingUp className={`h-3.5 w-3.5 ${atsColor(scan.atsScore)}`} />
+                          <span className={`font-bold ${atsColor(scan.atsScore)}`}>{scan.atsScore}%</span>
                         </div>
                       )}
                       <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
@@ -275,8 +309,44 @@ export default async function DashboardPage() {
         </div>
       )}
 
+      {/* Premium upsell (free users) */}
+      {!isPremium && (
+        <Card className="border-primary/20 bg-gradient-to-br from-primary/5 via-blue-500/5 to-violet-500/5 overflow-hidden relative">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+          <CardContent className="p-6 relative">
+            <div className="flex items-start gap-4">
+              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shrink-0">
+                <Crown className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-base">Unlock Premium</p>
+                <p className="text-sm text-muted-foreground mt-1 mb-3">
+                  Unlimited resume improvements, ATS analyses, and cover letters.
+                </p>
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {[
+                    "Unlimited improvements",
+                    "Unlimited ATS analyses",
+                    "Unlimited resume builds",
+                    "Priority AI processing",
+                  ].map(f => (
+                    <div key={f} className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      {f}
+                    </div>
+                  ))}
+                </div>
+                <Button asChild variant="gradient" size="sm">
+                  <Link href="/billing"><Crown className="mr-1.5 h-3.5 w-3.5" />Upgrade to Premium</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Empty state */}
-      {!hasMasterResume && (
+      {!hasMasterResume && recentScans.length === 0 && (
         <div className="text-center py-14 rounded-2xl border border-dashed border-border/50">
           <Upload className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-semibold mb-2">Start with your master resume</h3>

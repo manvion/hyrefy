@@ -224,6 +224,15 @@ async function saveToHistory(params: {
         },
       },
     });
+
+    // Increment usage counter for free users
+    const sub = await dbc.subscription.findUnique({ where: { userId: dbUserId } });
+    if (sub && sub.status !== "PREMIUM") {
+      await dbc.subscription.update({
+        where: { userId: dbUserId },
+        data: { scansUsed: { increment: 1 } },
+      });
+    }
   } catch {
     /* DB save is optional — never fail the stream */
   }

@@ -37,11 +37,14 @@ model Subscription {
   status               SubscriptionStatus @default(FREE)
   plan                 PlanTier           @default(FREE)
   scansUsed            Int                @default(0)
-  scansLimit           Int                @default(3)
+  scansLimit           Int                @default(2)
+  buildsUsed           Int                @default(0)
+  buildsLimit          Int                @default(1)
   coverLettersUsed     Int                @default(0)
   coverLettersLimit    Int                @default(1)
   interviewPrepsUsed   Int                @default(0)
   interviewPrepsLimit  Int                @default(1)
+  periodStart          DateTime           @default(now())
   currentPeriodEnd     DateTime?
   createdAt            DateTime           @default(now())
   updatedAt            DateTime           @updatedAt

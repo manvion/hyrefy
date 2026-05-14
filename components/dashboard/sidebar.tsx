@@ -72,14 +72,14 @@ function SignOutBtn({ collapsed }: { collapsed: boolean }) {
 }
 
 const navItems = [
-  { href: "/dashboard",      icon: LayoutDashboard, label: "Dashboard"      },
-  { href: "/resume/upload",  icon: Upload,          label: "My Resume"      },
-  { href: "/generate",       icon: Sparkles,        label: "Improve Resume" },
-  { href: "/build",          icon: FileText,        label: "Build Resume"   },
-  { href: "/analyze",        icon: FileSearch,      label: "ATS Analyzer"   },
-  { href: "/tracker",        icon: KanbanSquare,    label: "Job Tracker"    },
-  { href: "/history",        icon: History,         label: "History"        },
-  { href: "/interview-prep", icon: BrainCircuit,    label: "Interview AI"   },
+  { href: "/dashboard",      icon: LayoutDashboard, label: "Dashboard"        },
+  { href: "/resume/upload",  icon: Upload,          label: "My Resume"        },
+  { href: "/generate",       icon: Sparkles,        label: "Improve My Resume"},
+  { href: "/build",          icon: FileText,        label: "Build New Resume" },
+  { href: "/analyze",        icon: FileSearch,      label: "ATS Analyzer"     },
+  { href: "/tracker",        icon: KanbanSquare,    label: "Job Tracker"      },
+  { href: "/history",        icon: History,         label: "History"          },
+  { href: "/interview-prep", icon: BrainCircuit,    label: "Interview AI"     },
 ];
 
 const bottomItems = [

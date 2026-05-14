@@ -21,12 +21,12 @@ const navItems = [
 ];
 
 const moreItems = [
-  { href: "/resume/upload",  icon: Upload,       label: "My Resume"    },
-  { href: "/build",          icon: FileText,     label: "Build Resume" },
-  { href: "/analyze",        icon: FileSearch,   label: "ATS Analyzer" },
-  { href: "/interview-prep", icon: BrainCircuit, label: "Interview AI" },
-  { href: "/billing",        icon: CreditCard,   label: "Billing"      },
-  { href: "/settings",       icon: Settings,     label: "Settings"     },
+  { href: "/resume/upload",  icon: Upload,       label: "My Resume"       },
+  { href: "/build",          icon: FileText,     label: "Build New Resume"},
+  { href: "/analyze",        icon: FileSearch,   label: "ATS Analyzer"    },
+  { href: "/interview-prep", icon: BrainCircuit, label: "Interview AI"    },
+  { href: "/billing",        icon: CreditCard,   label: "Billing"         },
+  { href: "/settings",       icon: Settings,     label: "Settings"        },
 ];
 
 function SignOutButton({ onClose }: { onClose: () => void }) {

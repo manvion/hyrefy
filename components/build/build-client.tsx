@@ -155,7 +155,13 @@ function buildResumeText(data: ResumeData, lang: Language): string {
   return lines.join("\n").trim();
 }
 
-export function BuildClient() {
+interface BuildProps {
+  buildsUsed?: number;
+  buildsLimit?: number;
+  isPremium?: boolean;
+}
+
+export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false }: BuildProps) {
   const [data, setData] = useState<ResumeData>(DEFAULT_RESUME);
   const [previewLang, setPreviewLang] = useState<Language>("en");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
@@ -185,9 +191,9 @@ export function BuildClient() {
 
   const downloadPDF = (lang: Language) => {
     const text = buildResumeText(data, lang);
-    const langLabel = lang === "fr" ? "FR" : "EN";
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resume (${langLabel})</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;font-size:11pt;line-height:1.6;color:#111;padding:40px;max-width:800px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit;font-size:11pt}@media print{body{padding:0}@page{margin:2cm}}</style>
+    // Clean professional export — no watermarks, timestamps, or branding
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resume</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit;font-size:11pt}@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}</style>
 </head><body><pre>${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
 <script>window.onload=()=>{window.print()}<\/script></body></html>`;
     const blob = new Blob([html], { type: "text/html" });

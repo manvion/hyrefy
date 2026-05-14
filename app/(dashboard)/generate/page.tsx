@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getAuthUserId } from "@/lib/utils/auth";
@@ -5,7 +7,6 @@ import { db } from "@/lib/db";
 import { GenerateClient } from "@/components/generate/generate-client";
 import { Button } from "@/components/ui/button";
 import { Upload } from "lucide-react";
-
 import { isDemoMode } from "@/lib/utils/demo-mode";
 
 const DEMO_RESUME = `JANE SMITH
@@ -42,10 +43,16 @@ export default async function GeneratePage() {
 
   let masterResumeText = isDemoMode ? DEMO_RESUME : "";
   let masterResumeId: string | undefined;
+  let scansUsed = 0;
+  let scansLimit = 2;
+  let isPremium = false;
 
   if (!isDemoMode) {
     try {
-      const user = await db.user.findUnique({ where: { clerkId: userId } });
+      const user = await db.user.findUnique({
+        where: { clerkId: userId },
+        include: { subscription: true },
+      });
       if (user) {
         const master = await (db as any).resume.findFirst({
           where: { userId: user.id, isMaster: true },
@@ -56,29 +63,30 @@ export default async function GeneratePage() {
             where: { userId: user.id },
             orderBy: { createdAt: "desc" },
           });
-          if (any) {
-            masterResumeText = any.rawText || "";
-            masterResumeId = any.id;
-          }
+          if (any) { masterResumeText = any.rawText || ""; masterResumeId = any.id; }
         } else {
           masterResumeText = master.rawText || "";
           masterResumeId = master.id;
         }
+
+        if (user.subscription) {
+          isPremium = user.subscription.status === "PREMIUM";
+          scansUsed = user.subscription.scansUsed;
+          scansLimit = isPremium ? 9999 : 2;
+        }
       }
-    } catch {
-      // DB not configured
-    }
+    } catch { /* DB not configured */ }
   }
 
   if (!masterResumeText) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 max-w-md mx-auto">
         <div className="h-16 w-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
           <Upload className="h-8 w-8 text-primary" />
         </div>
         <div>
           <h1 className="text-2xl font-bold mb-2">Upload your resume first</h1>
-          <p className="text-muted-foreground max-w-md">
+          <p className="text-muted-foreground">
             Upload your resume once — we&apos;ll tailor it to every job you apply for.
           </p>
         </div>
@@ -97,6 +105,9 @@ export default async function GeneratePage() {
       masterResumeText={masterResumeText}
       masterResumeId={masterResumeId}
       defaultCountry="CA"
+      scansUsed={scansUsed}
+      scansLimit={scansLimit}
+      isPremium={isPremium}
     />
   );
 }
