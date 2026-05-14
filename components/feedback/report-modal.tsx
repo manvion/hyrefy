@@ -64,7 +64,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
 
       {/* Modal card */}
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-card shadow-2xl overflow-hidden"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-border/50 bg-card shadow-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {done ? (
@@ -82,7 +82,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
         ) : (
           <>
             {/* ── Header ── */}
-            <div className="relative bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-5 border-b border-border/30">
+            <div className="relative flex-shrink-0 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent px-6 pt-6 pb-5 border-b border-border/30">
               <button
                 type="button"
                 onClick={onClose}
@@ -100,7 +100,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
             </div>
 
             {/* ── Form ── */}
-            <div className="p-6 space-y-5">
+            <div className="p-6 space-y-5 overflow-y-auto flex-1">
 
               {/* Type */}
               <div>

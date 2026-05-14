@@ -37,6 +37,8 @@ export async function POST(request: NextRequest) {
     const apiKey   = process.env.RESEND_API_KEY;
     const reportTo = process.env.REPORT_TO_EMAIL;
 
+    console.log(`[report] DB saved. Email config: apiKey=${apiKey ? "set("+apiKey.length+"chars)" : "MISSING"}, reportTo=${reportTo ? "set" : "MISSING"}`);
+
     if (apiKey && reportTo) {
       try {
         const { Resend } = await import("resend");
@@ -48,7 +50,7 @@ export async function POST(request: NextRequest) {
           timeStyle: "short",
         });
 
-        await resend.emails.send({
+        const emailResult = await resend.emails.send({
           from: "Hyrefy Reports <onboarding@resend.dev>",
           to: [reportTo],
           subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
@@ -97,10 +99,12 @@ export async function POST(request: NextRequest) {
 </body>
 </html>`,
         });
+        console.log(`[report] Resend result:`, JSON.stringify(emailResult));
       } catch (emailErr) {
-        // Email failed but report is already saved — log and continue
-        console.error("Email notification failed (report saved):", emailErr);
+        console.error("[report] Email notification failed (report saved):", emailErr);
       }
+    } else {
+      console.warn("[report] Email skipped — RESEND_API_KEY or REPORT_TO_EMAIL not set");
     }
 
     return NextResponse.json({ success: true });
