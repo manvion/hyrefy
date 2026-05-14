@@ -119,14 +119,13 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
               {/* Title */}
               <div>
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">
-                  Summary <span className="text-primary">*</span>
+                  Summary <span className="text-muted-foreground font-normal normal-case">(optional)</span>
                 </label>
                 <input
                   className={fieldCls}
-                  placeholder="Brief one-line description of the issue"
+                  placeholder="Brief one-line description (auto-filled from type if left blank)"
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  required
                 />
               </div>
 
@@ -172,7 +171,7 @@ export function ReportModal({ userName, userEmail, userId, onClose }: Props) {
                   type="submit"
                   variant="gradient"
                   className="flex-1"
-                  disabled={submitting || !title.trim() || !description.trim()}
+                  disabled={submitting || !description.trim()}
                 >
                   {submitting ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Sending…</> : "Submit Report"}
                 </Button>

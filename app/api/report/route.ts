@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 
+const typeLabel: Record<string, string> = {
+  bug:         "Bug Report",
+  feature:     "Feature Request",
+  performance: "Performance Issue",
+  ux:          "UX / Design Issue",
+  other:       "Other",
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { type, title, description, contactPhone, userName, userEmail, userId } = await request.json();
 
-    if (!description?.trim() || !title?.trim()) {
-      return NextResponse.json({ error: "Title and description are required" }, { status: 400 });
+    if (!description?.trim()) {
+      return NextResponse.json({ error: "Description is required" }, { status: 400 });
     }
 
     const gmailUser = process.env.GMAIL_USER;
@@ -18,18 +26,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email not configured" }, { status: 500 });
     }
 
+    const resolvedTitle = title?.trim() || typeLabel[type] || "User Report";
+
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: { user: gmailUser, pass: gmailPass },
     });
-
-    const typeLabel: Record<string, string> = {
-      bug:         "Bug Report",
-      feature:     "Feature Request",
-      performance: "Performance Issue",
-      ux:          "UX / Design Issue",
-      other:       "Other",
-    };
 
     const now = new Date().toLocaleString("en-CA", {
       timeZone: "America/Toronto",
@@ -55,7 +57,7 @@ export async function POST(request: NextRequest) {
       </tr>
       <tr>
         <td style="padding: 8px 12px; font-weight: bold;">Title</td>
-        <td style="padding: 8px 12px;">${title}</td>
+        <td style="padding: 8px 12px;">${resolvedTitle}</td>
       </tr>
       <tr style="background: #f5f5f5;">
         <td style="padding: 8px 12px; font-weight: bold;">User Name</td>
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
     await transporter.sendMail({
       from: `"Hyrefy Reports" <${gmailUser}>`,
       to: reportTo,
-      subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${title} — from ${userName || userEmail || "user"}`,
+      subject: `[HYREFY URGENT] ${typeLabel[type] ?? "Report"}: ${resolvedTitle} — from ${userName || userEmail || "user"}`,
       html,
     });
 
