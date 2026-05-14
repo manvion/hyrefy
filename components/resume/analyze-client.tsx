@@ -33,11 +33,10 @@ function ScoreRing({ score }: { score: number }) {
   const radius = 50;
   const circumference = 2 * Math.PI * radius;
   const dash = (score / 100) * circumference;
-  const color =
-    score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
+  const color = score >= 80 ? "#10b981" : score >= 60 ? "#f59e0b" : "#ef4444";
 
   return (
-    <div className="relative" style={{ width: size, height: size }}>
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90">
         <circle cx={60} cy={60} r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="10" />
         <motion.circle
@@ -50,7 +49,7 @@ function ScoreRing({ score }: { score: number }) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-3xl font-bold"
+          className="text-3xl font-bold text-foreground"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
@@ -62,6 +61,8 @@ function ScoreRing({ score }: { score: number }) {
     </div>
   );
 }
+
+const inputCls = "w-full rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition";
 
 export function AnalyzeClient() {
   const [inputMode, setInputMode] = useState<"master" | "paste">("master");
@@ -75,7 +76,6 @@ export function AnalyzeClient() {
   const [loadingResume, setLoadingResume] = useState(true);
 
   useEffect(() => {
-    // Fetch master resume
     setLoadingResume(true);
     fetch("/api/resume/list")
       .then((r) => r.json())
@@ -89,7 +89,6 @@ export function AnalyzeClient() {
       .catch(() => setInputMode("paste"))
       .finally(() => setLoadingResume(false));
 
-    // Fetch usage
     fetch("/api/user/subscription")
       .then((r) => r.json())
       .then((data) => {
@@ -142,42 +141,36 @@ export function AnalyzeClient() {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 max-w-6xl">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 w-full">
 
-      {/* Input panel — 2 cols */}
+      {/* ── Input panel — 2 cols ── */}
       <div className="lg:col-span-2 space-y-4">
 
-        {/* Input mode toggle */}
-        <div className="rounded-xl border border-border/40 bg-card/30 p-1 flex gap-1">
-          <button
-            onClick={() => setInputMode("master")}
-            disabled={!masterResume && !loadingResume}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
-              inputMode === "master"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
-            )}
-          >
-            <FileText className="h-3.5 w-3.5" />
-            Use My Resume
-          </button>
-          <button
-            onClick={() => setInputMode("paste")}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all",
-              inputMode === "paste"
-                ? "bg-background shadow-sm text-foreground"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <ClipboardPaste className="h-3.5 w-3.5" />
-            Paste Text
-          </button>
+        {/* Mode toggle */}
+        <div className="flex gap-1 p-1 rounded-xl border border-border/50 bg-muted/30">
+          {([
+            { mode: "master" as const, icon: FileText, label: "Use My Resume" },
+            { mode: "paste"  as const, icon: ClipboardPaste, label: "Paste Text" },
+          ] as const).map(({ mode, icon: Icon, label }) => (
+            <button
+              key={mode}
+              onClick={() => setInputMode(mode)}
+              disabled={mode === "master" && !masterResume && !loadingResume}
+              className={cn(
+                "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all duration-150 active:scale-[0.97]",
+                inputMode === mode
+                  ? "bg-background shadow-sm text-foreground border border-border/40"
+                  : "text-muted-foreground hover:text-foreground hover:bg-background/50 disabled:opacity-40 disabled:cursor-not-allowed active:bg-background/70"
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
         </div>
 
-        {/* Resume source display */}
-        <div className="rounded-xl border border-border/40 bg-card/30 p-4">
+        {/* Resume source */}
+        <div className="rounded-xl border border-border/50 bg-card p-4">
           {inputMode === "master" ? (
             loadingResume ? (
               <div className="flex items-center gap-3">
@@ -189,20 +182,20 @@ export function AnalyzeClient() {
               </div>
             ) : masterResume ? (
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                   <FileText className="h-4 w-4 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{masterResume.fileName}</p>
-                  <p className="text-xs text-muted-foreground">Master Resume</p>
+                  <p className="text-sm font-medium truncate text-foreground">{masterResume.fileName}</p>
+                  <p className="text-xs text-muted-foreground">Master Resume · ready</p>
                 </div>
-                <Link href="/resume/upload">
-                  <Button variant="ghost" size="sm" className="h-7 text-xs">Change</Button>
-                </Link>
+                <Button asChild variant="ghost" size="sm" className="h-7 text-xs shrink-0">
+                  <Link href="/resume/upload">Change</Link>
+                </Button>
               </div>
             ) : (
-              <div className="text-center py-2">
-                <p className="text-sm text-muted-foreground mb-3">No master resume uploaded yet</p>
+              <div className="text-center py-3 space-y-3">
+                <p className="text-sm text-muted-foreground">No master resume uploaded yet</p>
                 <Button asChild variant="outline" size="sm">
                   <Link href="/resume/upload"><FileText className="mr-1.5 h-3.5 w-3.5" />Upload Resume</Link>
                 </Button>
@@ -210,46 +203,46 @@ export function AnalyzeClient() {
             )
           ) : (
             <div className="space-y-2">
-              <p className="text-xs font-medium text-muted-foreground">Paste your resume text</p>
-              <Textarea
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Paste your resume text</p>
+              <textarea
                 placeholder="Paste your complete resume text here..."
                 value={pastedText}
                 onChange={(e) => setPastedText(e.target.value)}
-                className="min-h-[140px] resize-none text-sm"
+                className={cn(inputCls, "min-h-[140px] resize-none")}
               />
-              <p className="text-xs text-muted-foreground">{pastedText.length} chars</p>
+              <p className="text-xs text-muted-foreground">{pastedText.length} characters</p>
             </div>
           )}
         </div>
 
         {/* Job description */}
-        <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Job Details</p>
+        <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Job Details</p>
           <input
             type="text"
             placeholder="Job title (optional)"
             value={jobTitle}
             onChange={(e) => setJobTitle(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition"
+            className={inputCls}
           />
-          <Textarea
+          <textarea
             placeholder="Paste the full job description here..."
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
-            className="min-h-[180px] resize-none text-sm"
+            className={cn(inputCls, "min-h-[180px] resize-none")}
           />
-          <p className="text-xs text-muted-foreground">{jobDescription.length} chars · Full JD gives best results</p>
+          <p className="text-xs text-muted-foreground">{jobDescription.split(/\s+/).filter(Boolean).length} words · Full JD gives best results</p>
         </div>
 
         {/* Usage indicator */}
         {scanLimit && !scanLimit.isPremium && (
           <div className={cn(
             "rounded-xl border px-4 py-3 flex items-center gap-3",
-            atLimit ? "border-destructive/30 bg-destructive/5" : "border-border/40 bg-card/20"
+            atLimit ? "border-destructive/30 bg-destructive/5" : "border-border/40 bg-card/50"
           )}>
-            <Zap className={cn("h-4 w-4 shrink-0", atLimit ? "text-destructive" : "text-amber-400")} />
+            <Zap className={cn("h-4 w-4 shrink-0", atLimit ? "text-destructive" : "text-amber-500")} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold">
+              <p className="text-xs font-semibold text-foreground">
                 {atLimit ? "Monthly scan limit reached" : `${scanLimit.limit - scanLimit.used} scan${scanLimit.limit - scanLimit.used !== 1 ? "s" : ""} remaining`}
               </p>
               <p className="text-xs text-muted-foreground">{scanLimit.used} / {scanLimit.limit} used this month</p>
@@ -264,7 +257,12 @@ export function AnalyzeClient() {
 
         <Button
           onClick={handleAnalyze}
-          disabled={loading || atLimit || (!masterResume && inputMode === "master") || (inputMode === "paste" && pastedText.trim().length < 50) || !jobDescription.trim()}
+          disabled={
+            loading || atLimit ||
+            (!masterResume && inputMode === "master") ||
+            (inputMode === "paste" && pastedText.trim().length < 50) ||
+            !jobDescription.trim()
+          }
           variant="gradient"
           size="lg"
           className="w-full"
@@ -275,7 +273,7 @@ export function AnalyzeClient() {
         </Button>
       </div>
 
-      {/* Results panel — 3 cols */}
+      {/* ── Results panel — 3 cols ── */}
       <div className="lg:col-span-3">
         <AnimatePresence mode="wait">
           {result ? (
@@ -286,28 +284,28 @@ export function AnalyzeClient() {
               className="space-y-4"
             >
               {/* Score header */}
-              <div className="rounded-xl border border-border/40 bg-card/30 p-5">
-                <div className="flex items-center gap-6">
+              <div className="rounded-xl border border-border/50 bg-card p-5">
+                <div className="flex items-center gap-6 flex-wrap">
                   <ScoreRing score={result.atsScore.overall} />
-                  <div className="flex-1 space-y-3">
+                  <div className="flex-1 min-w-0 space-y-3">
                     <div>
-                      <p className="text-lg font-bold">
+                      <p className="text-lg font-bold text-foreground">
                         {result.atsScore.overall >= 80 ? "Strong Match" : result.atsScore.overall >= 60 ? "Good Match" : "Needs Work"}
                       </p>
                       <p className="text-sm text-muted-foreground mt-0.5">
                         {result.jobAnalysis.title || "Position"} compatibility
                       </p>
                     </div>
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       {[
-                        { label: "Keywords", value: result.atsScore.keyword },
-                        { label: "Formatting", value: result.atsScore.formatting },
-                        { label: "Experience", value: result.atsScore.experience },
+                        { label: "Keywords",    value: result.atsScore.keyword },
+                        { label: "Formatting",  value: result.atsScore.formatting },
+                        { label: "Experience",  value: result.atsScore.experience },
                       ].map(({ label, value }) => (
-                        <div key={label} className="flex items-center gap-2.5">
+                        <div key={label} className="flex items-center gap-3">
                           <span className="text-xs text-muted-foreground w-20 shrink-0">{label}</span>
-                          <Progress value={value} className="flex-1 h-1.5" />
-                          <span className="text-xs font-medium w-7 text-right">{value}%</span>
+                          <Progress value={value} className="flex-1 h-2" />
+                          <span className="text-xs font-semibold text-foreground w-8 text-right">{value}%</span>
                         </div>
                       ))}
                     </div>
@@ -317,14 +315,14 @@ export function AnalyzeClient() {
 
               {/* Matched keywords */}
               {result.atsScore.matchedKeywords.length > 0 && (
-                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
-                  <p className="text-xs font-semibold flex items-center gap-1.5 text-emerald-500">
+                <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+                  <p className="text-xs font-semibold flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
                     <CheckCircle className="h-3.5 w-3.5" />
                     Matched Keywords ({result.atsScore.matchedKeywords.length})
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {result.atsScore.matchedKeywords.map((kw) => (
-                      <span key={kw} className="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 rounded-md px-2 py-0.5 font-medium">
+                      <span key={kw} className="text-[11px] bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25 rounded-full px-2.5 py-0.5 font-medium">
                         {kw}
                       </span>
                     ))}
@@ -334,15 +332,15 @@ export function AnalyzeClient() {
 
               {/* Missing keywords */}
               {result.atsScore.missingKeywords.length > 0 && (
-                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
-                  <p className="text-xs font-semibold flex items-center gap-1.5 text-amber-500">
+                <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+                  <p className="text-xs font-semibold flex items-center gap-1.5 text-amber-600 dark:text-amber-400 uppercase tracking-wide">
                     <AlertTriangle className="h-3.5 w-3.5" />
                     Missing Keywords ({result.atsScore.missingKeywords.length})
                   </p>
-                  <p className="text-xs text-muted-foreground">Add these to your resume to improve your score</p>
+                  <p className="text-xs text-muted-foreground">Add these to your resume to improve your ATS score</p>
                   <div className="flex flex-wrap gap-1.5">
                     {result.atsScore.missingKeywords.map((kw) => (
-                      <span key={kw} className="text-[11px] bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 rounded-md px-2 py-0.5 font-medium">
+                      <span key={kw} className="text-[11px] bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25 rounded-full px-2.5 py-0.5 font-medium">
                         {kw}
                       </span>
                     ))}
@@ -352,15 +350,15 @@ export function AnalyzeClient() {
 
               {/* Suggestions */}
               {result.atsScore.suggestions.length > 0 && (
-                <div className="rounded-xl border border-border/40 bg-card/30 p-4 space-y-2.5">
+                <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                     Improvement Suggestions
                   </p>
                   <ul className="space-y-2">
                     {result.atsScore.suggestions.slice(0, 5).map((s, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
+                      <li key={i} className="flex items-start gap-2.5 text-sm">
                         <ChevronRight className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{s}</span>
+                        <span className="text-foreground/80">{s}</span>
                       </li>
                     ))}
                   </ul>
@@ -368,7 +366,7 @@ export function AnalyzeClient() {
               )}
 
               {/* CTA */}
-              <Button asChild variant="gradient" className="w-full">
+              <Button asChild variant="gradient" className="w-full" size="lg">
                 <Link href="/generate">
                   <TrendingUp className="mr-2 h-4 w-4" />
                   Improve Resume with AI
@@ -380,12 +378,14 @@ export function AnalyzeClient() {
               key="empty"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="h-full min-h-[400px] rounded-xl border border-dashed border-border/50 flex flex-col items-center justify-center p-12 text-center"
+              className="h-full min-h-[480px] rounded-xl border border-dashed border-border/50 bg-card/20 flex flex-col items-center justify-center p-12 text-center"
             >
-              <Target className="h-12 w-12 text-muted-foreground/40 mb-4" />
-              <h3 className="text-base font-semibold mb-1">ATS score appears here</h3>
-              <p className="text-sm text-muted-foreground max-w-xs">
-                Select your resume source and paste a job description to check your ATS compatibility
+              <div className="h-16 w-16 rounded-2xl bg-muted/50 flex items-center justify-center mb-5">
+                <Target className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-base font-semibold text-foreground mb-2">ATS score appears here</h3>
+              <p className="text-sm text-muted-foreground max-w-xs leading-relaxed">
+                Select your resume, paste a job description, and click <strong className="text-foreground">Check ATS Score</strong> to see your compatibility
               </p>
             </motion.div>
           )}

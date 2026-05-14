@@ -200,6 +200,12 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Snappy press feedback — active state transitions are instant */
+button:active,
+[role="button"]:active {
+  transition-duration: 75ms !important;
+}
+
 /* Ensure native form elements respect the theme in all browsers */
 select, input, textarea {
   color-scheme: light;
