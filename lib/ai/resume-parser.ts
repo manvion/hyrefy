@@ -1,58 +1,43 @@
+/**
+ * Resume parser — uses llama-4-maverick (structured extraction model).
+ * Cached per rawText hash to avoid re-parsing the same resume.
+ */
+
 import { generateText } from "./client";
+import { makeCacheKey, cacheGet, cacheSet } from "./cache";
 import type { ParsedResume } from "@/types";
 
 export async function parseResumeWithAI(rawText: string): Promise<ParsedResume> {
-  const prompt = `You are an expert resume parser. Extract structured information from the following resume text.
+  const cacheKey = makeCacheKey("resume-parse", rawText.slice(0, 800));
+  const hit = cacheGet(cacheKey);
+  if (hit) return JSON.parse(hit);
 
-Return a JSON object with this exact structure:
+  const prompt = `Parse this resume. Return ONLY valid JSON — no markdown, no explanation.
+
 {
   "name": "Full Name",
   "email": "email@example.com",
   "phone": "+1234567890",
-  "location": "City, State/Country",
+  "location": "City, Country",
   "summary": "Professional summary",
-  "skills": ["skill1", "skill2"],
-  "experience": [
-    {
-      "company": "Company Name",
-      "title": "Job Title",
-      "duration": "Jan 2020 - Present",
-      "bullets": ["bullet point 1", "bullet point 2"]
-    }
-  ],
-  "education": [
-    {
-      "institution": "University Name",
-      "degree": "Bachelor of Science",
-      "field": "Computer Science",
-      "year": "2018"
-    }
-  ],
+  "skills": ["skill1","skill2"],
+  "experience": [{"company":"Co","title":"Title","duration":"Jan 2020 - Present","bullets":["bullet"]}],
+  "education": [{"institution":"Uni","degree":"BSc","field":"CS","year":"2018"}],
   "certifications": ["AWS Certified Developer"],
-  "projects": [
-    {
-      "name": "Project Name",
-      "description": "Brief description",
-      "technologies": ["React", "Node.js"]
-    }
-  ],
-  "keywords": ["keyword1", "keyword2"]
+  "projects": [{"name":"Project","description":"Brief desc","technologies":["React"]}],
+  "keywords": ["keyword1","keyword2"]
 }
 
-Extract ALL skills mentioned and generate comprehensive keywords from the resume content.
-Return ONLY valid JSON, no markdown or explanation.
+RESUME:
+${rawText.slice(0, 5000)}`;
 
-RESUME TEXT:
-${rawText}`;
+  const text = await generateText(prompt, { maxTokens: 3000, task: "PARSER" });
 
-  const text = await generateText(prompt, { maxTokens: 4096 });
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error("Resume parse failed — no JSON in response");
 
-  try {
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error("No JSON found in response");
-    const parsed = JSON.parse(jsonMatch[0]);
-    return { ...parsed, rawText };
-  } catch {
-    throw new Error("Failed to parse AI response as JSON");
-  }
+  const parsed = JSON.parse(match[0]) as ParsedResume;
+  const result = { ...parsed, rawText };
+  cacheSet(cacheKey, JSON.stringify(result), 30 * 60 * 1000); // 30 min
+  return result;
 }

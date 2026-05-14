@@ -1,3 +1,9 @@
+/**
+ * Resume + cover letter generation.
+ * Uses deepseek-chat-v3-0324 (fast, high-quality creative writing).
+ * Prompts are token-optimized: resume ≤ 4 000 chars, JD ≤ 2 000 chars.
+ */
+
 import { generateText } from "./client";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "./countries";
 
@@ -6,15 +12,15 @@ export { SUPPORTED_COUNTRIES, type CountryCode };
 export type OutputLanguage = "en" | "fr";
 
 const COUNTRY_STANDARDS: Record<CountryCode, string> = {
-  US: "US market: 1-page preferred (2 for 10+ yrs), ATS keyword-dense, every bullet quantified ($/%/numbers), tailored keywords from JD, no photo/age/marital status.",
-  CA: "Canadian market: 1-2 pages, Canadian spelling, professional and collaborative tone, highlight bilingual skills if applicable, no photo required, ATS-friendly.",
-  GB: "UK market: titled 'CV' not 'Resume', 2 pages standard, British English, personal profile at top, education section prominent for graduates, hobbies optional, references available on request.",
-  AU: "Australian market: 2-3 pages, Australian English, key achievements section, selection criteria addressed, 'References available on request' at end.",
-  NZ: "New Zealand market: 2-3 pages, conversational yet professional, key achievements highlighted, community involvement valued, NZ English.",
-  FR: "Marché français: CV 1-2 pages, français professionnel, chronologie inversée, compétences linguistiques, pas de photo obligatoire, style formel et précis.",
-  BE: "Marché belge: CV 1-2 pages, format européen, mention des langues (FR/NL/EN), formation académique détaillée, style professionnel.",
-  CH: "Marché suisse: CV 1-2 pages, très précis et structuré, compétences multilingues valorisées, permis de travail si pertinent, style européen soigné.",
-  IN: "Indian market: 2-3 pages, mention education prominently (IIT/IIM etc. if applicable), skills section critical (technical stack), objective/summary at top for freshers, quantified achievements preferred, include career objective, no photo required unless specifically requested.",
+  US: "US: 1-page preferred (2 for 10+ yrs), every bullet quantified, ATS keyword-dense, no photo/age.",
+  CA: "Canada: 1-2 pages, Canadian spelling, collaborative tone, bilingual skills if applicable.",
+  GB: "UK CV: 2 pages, titled 'CV', British English, personal profile at top, references available on request.",
+  AU: "Australia: 2-3 pages, AUS English, key achievements section, 'References available on request'.",
+  NZ: "New Zealand: 2-3 pages, conversational yet professional, community involvement valued.",
+  FR: "France: CV 1-2 pages, français professionnel, chronologie inversée, compétences linguistiques.",
+  BE: "Belgique: CV 1-2 pages, mention des langues FR/NL/EN, formation académique détaillée.",
+  CH: "Suisse: CV 1-2 pages, très précis, compétences multilingues, permis de travail si pertinent.",
+  IN: "India: 2-3 pages, education prominent, skills section critical, objective at top for freshers.",
 };
 
 export interface GenerateInput {
@@ -35,62 +41,168 @@ export interface GenerateResult {
   matchedKeywords: string[];
 }
 
+// ─── Non-streaming path (used by /api/generate for fallback) ──────────────────
+
 export async function generateDocuments(input: GenerateInput): Promise<GenerateResult> {
+  const { masterResumeText, jobTitle, company, targetCountry, jobDescription, outputLanguage } = input;
+  const isFr = outputLanguage === "fr";
+
+  const [resume, cover] = await Promise.all([
+    generateTailoredResume(input),
+    generateCoverLetter({ masterResumeText, jobTitle, company, jobDescription, outputLanguage }),
+  ]);
+
+  // ATS scores extracted from resume metadata block
+  const meta = parseResumeMeta(resume.raw);
+
+  return {
+    tailoredResume: resume.clean,
+    coverLetter: cover,
+    atsScoreBefore: meta.before ?? 55,
+    atsScoreAfter: meta.after ?? 80,
+    keyChanges: meta.changes,
+    matchedKeywords: meta.keywords,
+  };
+}
+
+// ─── Resume generation (streaming-ready) ─────────────────────────────────────
+
+export function buildResumePrompt(input: GenerateInput): { prompt: string; system: string } {
   const { masterResumeText, jobTitle, company, targetCountry, jobDescription, outputLanguage } = input;
   const isFr = outputLanguage === "fr";
   const countryStd = COUNTRY_STANDARDS[targetCountry];
   const countryName = SUPPORTED_COUNTRIES[targetCountry].name;
 
   const system = isFr
-    ? `Tu es un expert en rédaction de CV et lettres de motivation avec 20 ans d'expérience sur les marchés francophones (France, Belgique, Suisse, Canada). Ton écriture est idiomatique, naturelle et professionnelle — jamais une traduction de l'anglais, jamais du jargon AI. Règle absolue : tu reformules et valorises ce qui existe dans le CV source; tu n'inventes aucun fait, chiffre, expérience ou compétence.`
-    : `You are an elite resume and cover letter writer with 20+ years helping professionals at every level land top roles worldwide. You write with surgical precision — every word earns its place, every sentence sounds like it came from a seasoned human professional, never an AI. Your single non-negotiable rule: you enhance and reframe what exists; you never invent.`;
+    ? `Tu es un expert CV avec 20 ans d'expérience sur les marchés francophones. Règle absolue : tu reformules ce qui existe; tu n'inventes aucun fait.`
+    : `You are an elite resume writer with 20+ years of experience. Non-negotiable rule: enhance what exists, never invent facts, titles, or metrics.`;
 
-  const prompt = `COUNTRY STANDARD — apply strictly:
-${countryStd}
+  const prompt = `COUNTRY: ${countryStd}
 
-MASTER RESUME — this is the ONLY source of facts. Never add companies, titles, dates, degrees, technologies, metrics, or skills not present here:
-${masterResumeText.slice(0, 6000)}
+MASTER RESUME — only source of facts:
+${masterResumeText.slice(0, 4000)}
 
-JOB TARGET:
-- Title: ${jobTitle}
-- Company: ${company || "Not specified"}
-- Country: ${countryName}
-- Output language: ${isFr ? "French" : "English"}
+JOB: ${jobTitle}${company ? ` at ${company}` : ""}  |  ${countryName}  |  ${isFr ? "French output" : "English output"}
 
 JOB DESCRIPTION:
-${jobDescription.slice(0, 3000)}
+${jobDescription.slice(0, 2000)}
 
-${isFr ? "IMPORTANT: Rédige TOUT en français idiomatique." : "IMPORTANT: Write everything in English."}
+OUTPUT FORMAT — CRITICAL:
+Write the complete tailored resume as plain text only.
+Use ALL CAPS for section headers. Use • for bullets.
+After the last line of the resume, add exactly this block:
 
-Return ONLY a JSON object (no markdown, no explanation):
-{
-  "atsScoreBefore": <int 0-100, original resume vs this job>,
-  "atsScoreAfter": <int 0-100, tailored version vs this job>,
-  "keyChanges": [<5 specific improvements you made>],
-  "matchedKeywords": [<8-12 keywords from JD you wove in naturally>],
-  "tailoredResume": "<complete tailored resume, section headers in ALL CAPS, bullets with •, ready to use>",
-  "coverLetter": "<complete cover letter, 3-4 paragraphs, 280-350 words>"
+---META---
+CHANGES:change1|change2|change3|change4|change5
+KEYWORDS:kw1,kw2,kw3,kw4,kw5,kw6,kw7,kw8
+BEFORE:XX
+AFTER:YY
+
+Where BEFORE/AFTER are integer ATS scores (0-100) for original vs tailored resume.
+
+RULES:
+• Preserve ALL facts: companies, titles, dates, technologies, metrics
+• Vary action verbs — no repetition in same section
+• Weave JD keywords naturally only where they genuinely fit
+• ${isFr ? "Français idiomatique, registre formel. Sections en MAJUSCULES." : "Professional English — no buzzwords (leverage, synergy, robust). No corporate filler."}`;
+
+  return { prompt, system };
 }
 
-RESUME RULES — follow exactly:
-• PRESERVE every fact: companies, titles, dates, degrees, technologies, metrics — if it is not in the master resume, do not add it
-• If a bullet has no number, improve the verb and result description — never invent a metric
-• Reframe bullets to emphasize what the JD values most, using the candidate's own words as a base
-• Weave JD keywords in naturally where they genuinely fit — never force-insert keywords that do not match the experience
-• Vary action verbs — avoid repeating the same verb more than once in a section
-• ${isFr ? "Français idiomatique, registre formel — pas d'anglicismes, pas de calques. Sections en majuscules." : "Clean professional English — no AI buzzwords (leverage, spearhead, synergy, robust, etc.). No corporate filler."}
+async function generateTailoredResume(
+  input: GenerateInput
+): Promise<{ raw: string; clean: string }> {
+  const { prompt, system } = buildResumePrompt(input);
+  const raw = await generateText(prompt, { maxTokens: 3500, system, task: "RESUME" });
+  return { raw, clean: extractCleanResume(raw) };
+}
 
-COVER LETTER RULES:
-• Paragraph 1: specific compelling opening tied to this exact role and company — not a generic opener
-• Paragraphs 2-3: 2 strongest real experiences from the resume mapped to the job's key needs
-• Paragraph 4: direct confident closing with call to action
-• 280-350 words — tight and impactful
-• ${isFr ? "Français formel et humain — formule de politesse appropriée. Sonne comme une vraie personne, pas une IA." : "Sounds like the candidate wrote it themselves — professional, direct, no AI tells."}
-• Draw only from facts in the resume — never mention experiences or achievements not in the source`;
+// ─── Cover letter generation ──────────────────────────────────────────────────
 
-  const text = await generateText(prompt, { maxTokens: 6000, system });
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error("Failed to parse AI response");
+export function buildCoverLetterPrompt(
+  masterResumeText: string,
+  jobTitle: string,
+  company: string | undefined,
+  jobDescription: string,
+  outputLanguage: OutputLanguage
+): string {
+  const isFr = outputLanguage === "fr";
 
-  return JSON.parse(jsonMatch[0]);
+  return `Write a professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}.
+${isFr ? "Write in French (Canada)." : "Write in English."}
+
+RESUME HIGHLIGHTS:
+${masterResumeText.slice(0, 2500)}
+
+JOB DESCRIPTION:
+${jobDescription.slice(0, 1500)}
+
+RULES:
+• 280-350 words, 4 paragraphs
+• Paragraph 1: compelling opening specific to this role — not generic
+• Paragraphs 2-3: 2 strongest real experiences mapped to the job's key needs
+• Paragraph 4: confident closing with call to action
+• No "I am writing to apply" openers
+• No AI buzzwords (leverage, spearhead, synergy)
+• Based only on facts in the resume${isFr ? "\n• Formule de politesse appropriée" : ""}
+
+Write ONLY the cover letter text. No JSON, no metadata, no title.`;
+}
+
+export async function generateCoverLetter(params: {
+  masterResumeText: string;
+  jobTitle: string;
+  company?: string;
+  jobDescription: string;
+  outputLanguage: OutputLanguage;
+}): Promise<string> {
+  const prompt = buildCoverLetterPrompt(
+    params.masterResumeText,
+    params.jobTitle,
+    params.company,
+    params.jobDescription,
+    params.outputLanguage
+  );
+  return generateText(prompt, { maxTokens: 900, task: "RESUME", temperature: 0.65 });
+}
+
+// ─── Metadata parsing from streamed output ───────────────────────────────────
+
+export interface ResumeMeta {
+  before: number | null;
+  after: number | null;
+  changes: string[];
+  keywords: string[];
+}
+
+export function parseResumeMeta(raw: string): ResumeMeta {
+  const metaIdx = raw.indexOf("---META---");
+  if (metaIdx === -1) {
+    return { before: null, after: null, changes: [], keywords: [] };
+  }
+  const meta = raw.slice(metaIdx + 10);
+
+  const changesMatch = meta.match(/CHANGES:([^\n]+)/);
+  const keywordsMatch = meta.match(/KEYWORDS:([^\n]+)/);
+  const beforeMatch = meta.match(/BEFORE:(\d+)/);
+  const afterMatch = meta.match(/AFTER:(\d+)/);
+
+  const changes = changesMatch
+    ? changesMatch[1].split("|").map((s) => s.trim()).filter(Boolean)
+    : [];
+  const keywords = keywordsMatch
+    ? keywordsMatch[1].split(",").map((s) => s.trim()).filter(Boolean)
+    : [];
+
+  return {
+    before: beforeMatch ? parseInt(beforeMatch[1], 10) : null,
+    after: afterMatch ? parseInt(afterMatch[1], 10) : null,
+    changes,
+    keywords,
+  };
+}
+
+export function extractCleanResume(raw: string): string {
+  const metaIdx = raw.indexOf("---META---");
+  return metaIdx !== -1 ? raw.slice(0, metaIdx).trim() : raw.trim();
 }
