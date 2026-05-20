@@ -235,7 +235,7 @@ export default async function AdminDashboardPage({
                       <div key={user.email} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-                            {(user.name || user.email)[0].toUpperCase()}
+                            {((user.name || user.email || "?")[0] ?? "?").toUpperCase()}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{user.name || user.email}</p>
