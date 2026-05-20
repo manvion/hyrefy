@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
   response.cookies.set(cookie.name, cookie.value, {
     httpOnly: cookie.httpOnly,
     secure: cookie.secure,
+    sameSite: cookie.sameSite,
     maxAge: cookie.maxAge,
     path: cookie.path,
   });

@@ -9,8 +9,9 @@ import { toast } from "@/components/ui/toaster";
 import {
   Upload, FileText, X, CheckCircle, Loader2, AlertCircle,
   Sparkles, Search, Trash2, RefreshCw, Calendar, Eye, EyeOff,
-  Shield, Zap, FileCheck,
+  Shield, Zap, FileCheck, Palette, Download,
 } from "lucide-react";
+import { TemplateSelectorModal } from "@/components/resume/resume-templates";
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
 
@@ -28,11 +29,28 @@ interface Props {
 
 // ─── Document preview (PDF-like rendering) ────────────────────────────────────
 
-function ResumeDocumentPreview({ text }: { text: string }) {
+const FONT_OPTIONS = [
+  { label: "Serif (Classic)", value: "'Georgia', serif" },
+  { label: "Sans-serif (Modern)", value: "'Arial', sans-serif" },
+  { label: "Calibri (Office)", value: "'Calibri', 'Trebuchet MS', sans-serif" },
+  { label: "Garamond (Elegant)", value: "'Garamond', 'Georgia', serif" },
+  { label: "Mono (Technical)", value: "'Courier New', monospace" },
+];
+
+const COLOR_OPTIONS = [
+  { label: "Blue",   value: "#0A66C2" },
+  { label: "Black",  value: "#1a1a2e" },
+  { label: "Teal",   value: "#0d7377" },
+  { label: "Purple", value: "#6c5ce7" },
+  { label: "Red",    value: "#d63031" },
+  { label: "Green",  value: "#00897b" },
+];
+
+function ResumeDocumentPreview({ text, fontFamily = "'Georgia', serif", accentColor = "#111" }: { text: string; fontFamily?: string; accentColor?: string }) {
   const lines = text.split("\n");
 
   return (
-    <div className="bg-white text-gray-900 shadow-2xl rounded-sm mx-auto font-serif text-[11pt] leading-[1.55] min-h-[1100px] w-full max-w-[680px] print:shadow-none">
+    <div className="bg-white text-gray-900 shadow-2xl rounded-sm mx-auto text-[11pt] leading-[1.55] min-h-[1100px] w-full max-w-[680px] print:shadow-none" style={{ fontFamily }}>
       <div className="px-12 py-10">
         {lines.map((line, i) => {
           const trimmed = line.trim();
@@ -49,7 +67,7 @@ function ResumeDocumentPreview({ text }: { text: string }) {
           ) {
             return (
               <div key={i} className="mt-5 mb-1.5">
-                <p className="text-[10pt] font-bold uppercase tracking-[0.12em] text-gray-700 border-b border-gray-300 pb-0.5">
+                <p className="text-[10pt] font-bold uppercase tracking-[0.12em] pb-0.5" style={{ color: accentColor, borderBottom: `1px solid ${accentColor}40` }}>
                   {trimmed}
                 </p>
               </div>
@@ -112,6 +130,10 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
   const [existingResume, setExistingResume] = useState(initialResume);
   const [mode, setMode] = useState<"preview" | "upload">(initialResume ? "preview" : "upload");
   const [showFullText, setShowFullText] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const [showEditStyle, setShowEditStyle] = useState(false);
+  const [fontFamily, setFontFamily] = useState("'Georgia', serif");
+  const [accentColor, setAccentColor] = useState("#0A66C2");
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -239,20 +261,95 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
         </div>
 
         {/* Action CTAs */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button asChild variant="gradient" size="lg" className="w-full h-12">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          <Button asChild variant="gradient" size="sm" className="w-full h-10">
             <Link href="/generate">
-              <Sparkles className="mr-2 h-4 w-4" />
-              Improve My Resume
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Improve
             </Link>
           </Button>
-          <Button asChild variant="outline" size="lg" className="w-full h-12">
+          <Button asChild variant="outline" size="sm" className="w-full h-10">
             <Link href="/analyze">
-              <Search className="mr-2 h-4 w-4" />
-              Analyze ATS Score
+              <Search className="mr-1.5 h-3.5 w-3.5" />
+              ATS Score
             </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full h-10 gap-1.5"
+            onClick={() => setTemplateOpen(true)}
+          >
+            <Download className="h-3.5 w-3.5" />
+            Templates
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("w-full h-10 gap-1.5", showEditStyle && "border-primary text-primary")}
+            onClick={() => setShowEditStyle(v => !v)}
+          >
+            <Palette className="h-3.5 w-3.5" />
+            Edit Style
           </Button>
         </div>
+
+        {/* Edit Style Panel */}
+        {showEditStyle && (
+          <div className="rounded-xl border border-border/50 bg-card/60 p-4 space-y-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Resume Style</p>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Font Family</label>
+                <div className="flex flex-wrap gap-2">
+                  {FONT_OPTIONS.map(f => (
+                    <button
+                      key={f.value}
+                      type="button"
+                      onClick={() => setFontFamily(f.value)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-xs transition-all",
+                        fontFamily === f.value
+                          ? "border-primary bg-primary/10 text-primary font-semibold"
+                          : "border-border/40 text-muted-foreground hover:border-border"
+                      )}
+                      style={{ fontFamily: f.value }}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1.5 block">Accent Color</label>
+                <div className="flex gap-2">
+                  {COLOR_OPTIONS.map(c => (
+                    <button
+                      key={c.value}
+                      type="button"
+                      onClick={() => setAccentColor(c.value)}
+                      title={c.label}
+                      className={cn(
+                        "h-7 w-7 rounded-full border-2 transition-all",
+                        accentColor === c.value ? "border-foreground scale-110 shadow-md" : "border-transparent"
+                      )}
+                      style={{ background: c.value }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Template modal */}
+        {templateOpen && existingResume.rawText && (
+          <TemplateSelectorModal
+            text={existingResume.rawText}
+            filename={existingResume.fileName}
+            onClose={() => setTemplateOpen(false)}
+          />
+        )}
 
         {/* Document preview */}
         {existingResume.rawText && (
@@ -289,7 +386,7 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
               )}
             >
               <div className="py-8 px-4">
-                <ResumeDocumentPreview text={existingResume.rawText} />
+                <ResumeDocumentPreview text={existingResume.rawText} fontFamily={fontFamily} accentColor={accentColor} />
               </div>
             </div>
           </div>

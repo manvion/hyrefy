@@ -1,6 +1,6 @@
 "use client";
 
-import { Download, FileText, Mail } from "lucide-react";
+import { Download, FileText, Mail, FileType2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Props {
@@ -38,8 +38,87 @@ function openPrintWindow(content: string, title: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadTxt(content: string, filename: string) {
-  const blob = new Blob([content], { type: "text/plain" });
+async function downloadDocx(content: string, filename: string) {
+  const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, Packer, BorderStyle } = await import("docx");
+
+  const lines = content.split("\n");
+  const children: InstanceType<typeof Paragraph>[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      children.push(new Paragraph({ text: "" }));
+      continue;
+    }
+
+    // ALL-CAPS section header
+    if (
+      trimmed === trimmed.toUpperCase() &&
+      trimmed.length > 2 &&
+      trimmed.length < 60 &&
+      !trimmed.match(/^[•\-–—*]/)
+    ) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: trimmed, bold: true, size: 22 })],
+          spacing: { before: 200, after: 80 },
+          border: { bottom: { color: "999999", size: 6, style: BorderStyle.SINGLE, space: 4 } },
+        })
+      );
+      continue;
+    }
+
+    // Bullet point
+    if (trimmed.match(/^[•\-–—*]\s/)) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: trimmed.replace(/^[•\-–—*]\s/, ""), size: 20 })],
+          bullet: { level: 0 },
+        })
+      );
+      continue;
+    }
+
+    // First non-empty line = name
+    const firstContent = lines.find(l => l.trim());
+    if (line === firstContent) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: trimmed, bold: true, size: 36 })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 120 },
+        })
+      );
+      continue;
+    }
+
+    // Contact row (contains | or @ near top)
+    if (trimmed.includes("|") || (trimmed.includes("@") && children.length < 5)) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: trimmed, size: 18, color: "555555" })],
+          alignment: AlignmentType.CENTER,
+          spacing: { after: 60 },
+        })
+      );
+      continue;
+    }
+
+    // Default line
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: trimmed, size: 20 })],
+        spacing: { after: 40 },
+      })
+    );
+  }
+
+  const doc = new Document({
+    sections: [{ properties: {}, children }],
+  });
+
+  const blob = await Packer.toBlob(doc);
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -49,6 +128,7 @@ function downloadTxt(content: string, filename: string) {
 }
 
 export function HistoryDownloadButtons({ jobTitle, company, tailoredResume, coverLetter, lang }: Props) {
+  const slug = jobTitle.toLowerCase().replace(/\s+/g, "-");
   const suffix = `${jobTitle}${company ? ` at ${company}` : ""} (${lang})`;
 
   return (
@@ -81,12 +161,12 @@ export function HistoryDownloadButtons({ jobTitle, company, tailoredResume, cove
           variant="ghost"
           className="h-7 text-xs gap-1.5 text-muted-foreground"
           onClick={() => {
-            if (tailoredResume) downloadTxt(tailoredResume, `resume-${jobTitle.toLowerCase().replace(/\s+/g, "-")}.txt`);
-            if (coverLetter) downloadTxt(coverLetter, `cover-letter-${jobTitle.toLowerCase().replace(/\s+/g, "-")}.txt`);
+            if (tailoredResume) downloadDocx(tailoredResume, `resume-${slug}.docx`);
+            if (coverLetter) downloadDocx(coverLetter, `cover-letter-${slug}.docx`);
           }}
         >
-          <Download className="h-3 w-3" />
-          .txt
+          <FileType2 className="h-3 w-3" />
+          .docx
         </Button>
       )}
     </div>

@@ -21,5 +21,5 @@ export async function requireAdmin() {
 }
 
 export function createSessionCookie() {
-  return { name: SESSION_COOKIE, value: SESSION_VALUE, httpOnly: true, secure: process.env.NODE_ENV === "production", maxAge: 60 * 60 * 8, path: "/" };
+  return { name: SESSION_COOKIE, value: SESSION_VALUE, httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, maxAge: 60 * 60 * 8, path: "/" };
 }
