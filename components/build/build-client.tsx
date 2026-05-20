@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import {
-  Sparkles, Download, Plus, Trash2, Loader2, FileText, ChevronDown, ChevronUp
+  Sparkles, Download, Plus, Trash2, Loader2, FileText, ChevronDown, ChevronUp, Globe
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
+import { SUPPORTED_COUNTRIES, type CountryCode } from "@/lib/ai/countries";
+import { ResumePreview, COUNTRY_STYLES } from "@/components/resume/resume-preview";
 
 type Language = "en" | "fr";
 
@@ -164,11 +166,52 @@ interface BuildProps {
 export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false }: BuildProps) {
   const [data, setData] = useState<ResumeData>(DEFAULT_RESUME);
   const [previewLang, setPreviewLang] = useState<Language>("en");
+  const [targetCountry, setTargetCountry] = useState<CountryCode>("CA");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     contact: true, summary: true, experience: true, education: true,
     skills: true, projects: false, certifications: false, languages: false,
   });
   const [aiLoading, setAiLoading] = useState<Record<string, boolean>>({});
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedFr, setTranslatedFr] = useState<string>("");
+  const translateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const translateAbortRef = useRef<AbortController | null>(null);
+  const translateSourceRef = useRef<string>("");
+
+  const enText = buildResumeText(data, "en");
+
+  useEffect(() => {
+    if (previewLang !== "fr" || !enText.trim()) return;
+    if (translateSourceRef.current === enText) return;
+
+    if (translateTimerRef.current) clearTimeout(translateTimerRef.current);
+    if (translateAbortRef.current) translateAbortRef.current.abort();
+
+    translateTimerRef.current = setTimeout(() => {
+      const controller = new AbortController();
+      translateAbortRef.current = controller;
+      setIsTranslating(true);
+      fetch("/api/generate/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: enText, targetLanguage: "fr", docType: "resume" }),
+        signal: controller.signal,
+      })
+        .then(r => r.json())
+        .then(d => {
+          if (d.translated) {
+            translateSourceRef.current = enText;
+            setTranslatedFr(d.translated);
+          }
+        })
+        .catch(() => {})
+        .finally(() => setIsTranslating(false));
+    }, 1500);
+
+    return () => {
+      if (translateTimerRef.current) clearTimeout(translateTimerRef.current);
+    };
+  }, [previewLang, enText]);
 
   const toggle = (section: string) => setExpanded(p => ({ ...p, [section]: !p[section] }));
 
@@ -190,11 +233,30 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
   }, [previewLang]);
 
   const downloadPDF = (lang: Language) => {
-    const text = buildResumeText(data, lang);
-    // Clean professional export — no watermarks, timestamps, or branding
+    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang);
+    const style = COUNTRY_STYLES[targetCountry] ?? COUNTRY_STYLES.CA;
+    const ac = style.accentColor;
+    const ff = style.fontFamily;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resume</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit;font-size:11pt}@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}</style>
-</head><body><pre>${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:${ff};font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}
+h1{font-size:22pt;font-weight:700;text-align:center;color:${ac};letter-spacing:-0.02em;margin-bottom:2px}
+.contact{text-align:center;font-size:9.5pt;color:#4b5563;margin-bottom:2px}
+.section{margin-top:18px;margin-bottom:6px;font-size:9.5pt;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${ac};border-bottom:1.5px solid ${ac}55;padding-bottom:2px}
+.bullet{display:flex;gap:8px;margin-left:8px;margin:1px 0 1px 8px}
+.bullet .dot{color:${ac};flex-shrink:0}
+.job{font-size:11pt;font-weight:600;color:#111827;margin-top:10px}
+.body{font-size:10.5pt;color:#374151;margin:1px 0}
+@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}
+</style></head><body>
+${text.split("\n").map(line => {
+  const t = line.trim();
+  if (!t) return "<div style='height:6px'></div>";
+  const firstContent = text.split("\n").find(l => l.trim());
+  if (line === firstContent) return `<h1>${t}</h1>`;
+  if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) return `<div class="section">${t}</div>`;
+  if (t.match(/^[•\-–—*]\s/)) return `<div class="bullet"><span class="dot">•</span><span>${t.replace(/^[•\-–—*]\s/, "")}</span></div>`;
+  return `<p class="body">${t}</p>`;
+}).join("\n")}
 <script>window.onload=()=>{window.print()}<\/script></body></html>`;
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
@@ -204,7 +266,7 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
   };
 
   const downloadDocx = async (lang: Language) => {
-    const text = buildResumeText(data, lang);
+    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang);
     const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
     const lines = text.split("\n");
     const firstContent = lines.find(l => l.trim()) ?? "";
@@ -239,13 +301,46 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
     URL.revokeObjectURL(url);
   };
 
-  const previewText = buildResumeText(data, previewLang);
+  const previewText = previewLang === "fr"
+    ? (translatedFr || buildResumeText(data, "fr"))
+    : enText;
+  const countryStyle = COUNTRY_STYLES[targetCountry] ?? COUNTRY_STYLES.CA;
 
   return (
     <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-0">
 
       {/* LEFT: Editor */}
       <div className="overflow-y-auto space-y-3 pr-1">
+
+        {/* Country + Language row */}
+        <div className="rounded-xl border border-border/50 bg-card/30 px-4 py-3 flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-2 flex-1 min-w-[180px]">
+            <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+            <select
+              className="flex-1 text-sm rounded-lg border border-border bg-background px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              value={targetCountry}
+              onChange={e => setTargetCountry(e.target.value as CountryCode)}
+            >
+              {(Object.entries(SUPPORTED_COUNTRIES) as [CountryCode, { name: string; flag: string }][]).map(([code, info]) => (
+                <option key={code} value={code}>{info.flag} {info.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex gap-1 p-0.5 rounded-lg border border-border bg-muted/20">
+            {(["en", "fr"] as Language[]).map(lang => (
+              <button
+                key={lang}
+                onClick={() => setPreviewLang(lang)}
+                className={cn(
+                  "rounded-md px-3 py-1 text-xs font-semibold transition-all",
+                  previewLang === lang ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {lang === "en" ? "EN" : "FR"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         {/* Contact */}
         <div className="rounded-xl border border-border/50 bg-card/30 overflow-hidden">
@@ -470,39 +565,33 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
       {/* RIGHT: Live preview + Download */}
       <div className="hidden lg:flex flex-col gap-4 min-h-0">
 
-        {/* Preview header */}
+        {/* Live Preview */}
         <div className="rounded-2xl border border-border/50 bg-card/30 overflow-hidden flex flex-col flex-1 min-h-0">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-card/50 shrink-0">
-            <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Live Preview</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="flex gap-1 p-0.5 rounded-lg border border-border bg-muted/20">
-                {(["en", "fr"] as Language[]).map(lang => (
-                  <button
-                    key={lang}
-                    onClick={() => setPreviewLang(lang)}
-                    className={cn(
-                      "rounded-md px-2.5 py-1 text-xs font-semibold transition-all",
-                      previewLang === lang ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    {lang.toUpperCase()}
-                  </button>
-                ))}
-              </div>
-            </div>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border/30 bg-card/50 shrink-0">
+            <FileText className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Live Preview</span>
+            {isTranslating && (
+              <span className="flex items-center gap-1 text-xs text-primary animate-pulse">
+                <Loader2 className="h-3 w-3 animate-spin" />Translating...
+              </span>
+            )}
+            <span className="ml-auto text-xs text-muted-foreground">
+              {SUPPORTED_COUNTRIES[targetCountry].flag} {SUPPORTED_COUNTRIES[targetCountry].name} format
+            </span>
           </div>
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto bg-gray-100/80 dark:bg-gray-200/10">
             {previewText ? (
-              <pre className="text-xs leading-relaxed whitespace-pre-wrap font-mono text-foreground/85">
-                {previewText}
-              </pre>
+              <div className="py-6 px-4">
+                <ResumePreview
+                  text={previewText}
+                  accentColor={countryStyle.accentColor}
+                  fontFamily={countryStyle.fontFamily}
+                />
+              </div>
             ) : (
-              <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground gap-3">
+              <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground gap-3 py-20">
                 <FileText className="h-10 w-10 opacity-20" />
-                <p className="text-sm">Start filling in sections to see your resume preview here</p>
+                <p className="text-sm">Fill in sections to see your formatted resume</p>
               </div>
             )}
           </div>

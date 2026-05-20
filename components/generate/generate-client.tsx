@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RichTextEditor, plainTextToHtml, htmlToPlainText } from "@/components/ui/rich-text-editor";
 import {
   Sparkles, Download, Copy, Check, ChevronRight, Globe,
   Briefcase, FileText, Mail, ArrowLeft, TrendingUp, Zap,
-  Edit3, Languages, Loader2, Wifi, Lock, Crown,
+  Edit3, Wifi, Lock, Crown,
   Plus, Minus, BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "@/lib/ai/countries";
 import Link from "next/link";
+import { ResumePreview, CoverLetterPreview, COUNTRY_STYLES } from "@/components/resume/resume-preview";
 
 type Language = "en" | "fr";
 type Step = "form" | "generating" | "result";
@@ -95,6 +96,7 @@ function UsageBanner({ used, limit, isPremium }: { used: number; limit: number; 
 
 function DocumentPanel({
   title, icon: Icon, content, onContentChange, fileName, generatedLang,
+  accentColor = "#0A66C2", fontFamily = "'Arial', sans-serif", isCoverLetter = false,
 }: {
   title: string;
   icon: React.ElementType;
@@ -102,46 +104,27 @@ function DocumentPanel({
   onContentChange: (v: string) => void;
   fileName: string;
   generatedLang: Language;
+  accentColor?: string;
+  fontFamily?: string;
+  isCoverLetter?: boolean;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editHtml, setEditHtml] = useState("");
-  const [translating, setTranslating] = useState<Language | null>(null);
-  const [translated, setTranslated] = useState<Partial<Record<Language, string>>>({});
   const [copied, setCopied] = useState(false);
 
-  const ensureLang = useCallback(async (lang: Language): Promise<string> => {
-    if (lang === generatedLang) return content;
-    if (translated[lang]) return translated[lang]!;
-    setTranslating(lang);
-    try {
-      const res = await fetch("/api/generate/translate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content, targetLanguage: lang, docType: title.toLowerCase().includes("cover") ? "cover" : "resume" }),
-      });
-      const d = await res.json();
-      const t = d.translated as string;
-      setTranslated((p) => ({ ...p, [lang]: t }));
-      return t;
-    } catch { return content; }
-    finally { setTranslating(null); }
-  }, [content, generatedLang, title, translated]);
-
-  const downloadPDF = async (lang: Language) => {
-    const text = await ensureLang(lang);
+  const downloadPDF = () => {
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${fileName}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,'Times New Roman',serif;font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit;font-size:11pt}@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}</style>
-</head><body><pre>${text.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:${fontFamily};font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit;font-size:11pt}@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}</style>
+</head><body><pre>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
 <script>window.onload=()=>{window.print()}<\/script></body></html>`;
     const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
     Object.assign(document.createElement("a"), { href: url, target: "_blank" }).click();
     URL.revokeObjectURL(url);
   };
 
-  const downloadDocx = async (lang: Language) => {
-    const text = await ensureLang(lang);
+  const downloadDocx = async () => {
     const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
-    const lines = text.split("\n");
+    const lines = content.split("\n");
     const firstContent = lines.find(l => l.trim()) ?? "";
     const children: InstanceType<typeof Paragraph>[] = [];
     let passedName = false;
@@ -167,7 +150,7 @@ function DocumentPanel({
     const doc = new Document({ sections: [{ properties: {}, children }] });
     const blob = await Packer.toBlob(doc);
     const url = URL.createObjectURL(blob);
-    Object.assign(document.createElement("a"), { href: url, download: `${fileName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${lang}.docx` }).click();
+    Object.assign(document.createElement("a"), { href: url, download: `${fileName.replace(/[^a-z0-9]/gi, "-").toLowerCase()}-${generatedLang}.docx` }).click();
     URL.revokeObjectURL(url);
   };
 
@@ -210,7 +193,7 @@ function DocumentPanel({
       </div>
 
       {/* Document body */}
-      <div className="flex-1 overflow-y-auto bg-background">
+      <div className="flex-1 overflow-y-auto">
         {isEditing ? (
           <RichTextEditor
             content={editHtml}
@@ -218,49 +201,26 @@ function DocumentPanel({
             minHeight={540}
             className="rounded-none border-0 border-none"
           />
+        ) : isCoverLetter ? (
+          <div className="bg-white min-h-[540px]">
+            <CoverLetterPreview text={content} accentColor={accentColor} fontFamily={fontFamily} />
+          </div>
         ) : (
-          <pre className="p-5 text-sm leading-relaxed whitespace-pre-wrap font-sans text-foreground/90" style={{ minHeight: 540 }}>
-            {content}
-          </pre>
+          <div className="bg-gray-100/80 dark:bg-gray-200/10 py-4 px-3 min-h-[540px]">
+            <ResumePreview text={content} accentColor={accentColor} fontFamily={fontFamily} />
+          </div>
         )}
       </div>
 
       {/* Download footer */}
       <div className="border-t border-border/40 px-4 py-3 bg-card shrink-0">
-        <p className="text-[11px] text-muted-foreground mb-2 flex items-center gap-1.5">
-          <Languages className="h-3 w-3" />Download · choose language
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {(["en", "fr"] as Language[]).map((lang) => {
-            const isGen = lang === generatedLang;
-            const isLoading = translating === lang;
-            const lbl = lang === "en" ? "EN" : "FR";
-            return (
-              <React.Fragment key={lang}>
-                <Button
-                  size="sm"
-                  variant={isGen ? "gradient" : "outline"}
-                  className="h-8 text-xs gap-1.5"
-                  disabled={isLoading}
-                  onClick={() => downloadPDF(lang)}
-                >
-                  {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-                  PDF {lbl}
-                  {isGen && <Badge variant="secondary" className="text-[9px] h-4 px-1">Generated</Badge>}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-xs gap-1.5"
-                  disabled={isLoading}
-                  onClick={() => downloadDocx(lang)}
-                >
-                  {isLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
-                  DOCX {lbl}
-                </Button>
-              </React.Fragment>
-            );
-          })}
+        <div className="flex gap-2">
+          <Button size="sm" variant="gradient" className="h-8 text-xs gap-1.5" onClick={downloadPDF}>
+            <Download className="h-3 w-3" />PDF
+          </Button>
+          <Button size="sm" variant="outline" className="h-8 text-xs gap-1.5" onClick={downloadDocx}>
+            <FileText className="h-3 w-3" />.docx
+          </Button>
         </div>
       </div>
     </div>
@@ -399,6 +359,7 @@ export function GenerateClient({
   const streamRef = useRef<HTMLPreElement>(null);
 
   const atLimit = !isPremium && scansUsed >= scansLimit;
+  const countryStyle = COUNTRY_STYLES[form.targetCountry] ?? { accentColor: "#0A66C2", fontFamily: "'Arial', sans-serif" };
 
   useEffect(() => {
     fetch("/api/geo").then(r => r.json()).then(d => {
@@ -787,6 +748,9 @@ export function GenerateClient({
                 onContentChange={setEditedResume}
                 fileName={`Resume-${form.jobTitle}${form.company ? `-${form.company}` : ""}`}
                 generatedLang={form.outputLanguage}
+                accentColor={countryStyle.accentColor}
+                fontFamily={countryStyle.fontFamily}
+                isCoverLetter={false}
               />
               <DocumentPanel
                 title={`Cover Letter — ${form.jobTitle}`}
@@ -795,6 +759,9 @@ export function GenerateClient({
                 onContentChange={setEditedCover}
                 fileName={`CoverLetter-${form.jobTitle}${form.company ? `-${form.company}` : ""}`}
                 generatedLang={form.outputLanguage}
+                accentColor={countryStyle.accentColor}
+                fontFamily={countryStyle.fontFamily}
+                isCoverLetter={true}
               />
             </div>
 
