@@ -231,8 +231,8 @@ export default async function AdminDashboardPage({
               <CardContent>
                 {jobSeekerStats.recentUsers.length > 0 ? (
                   <div className="divide-y divide-border/20">
-                    {jobSeekerStats.recentUsers.map((user) => (
-                      <div key={user.email} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                    {jobSeekerStats.recentUsers.map((user, i) => (
+                      <div key={`${user.email}-${i}`} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-bold text-primary">
                             {((user.name || user.email || "?")[0] ?? "?").toUpperCase()}
@@ -249,7 +249,7 @@ export default async function AdminDashboardPage({
                           </span>
                           <span className="text-xs text-muted-foreground flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            {new Date(user.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" })}
+                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric" }) : "—"}
                           </span>
                           <Badge
                             variant={user.subscription?.status === "PREMIUM" ? "success" : "secondary"}
@@ -342,11 +342,11 @@ export default async function AdminDashboardPage({
               <CardContent>
                 {employerStats.recentWaitlist.length > 0 ? (
                   <div className="divide-y divide-border/20">
-                    {employerStats.recentWaitlist.map((entry) => (
-                      <div key={entry.email} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                    {employerStats.recentWaitlist.map((entry, i) => (
+                      <div key={`${entry.email}-${i}`} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
                         <div className="flex items-center gap-3">
                           <div className="h-8 w-8 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-xs font-bold text-amber-400">
-                            {entry.email[0].toUpperCase()}
+                            {((entry.email || "?")[0] ?? "?").toUpperCase()}
                           </div>
                           <div>
                             <p className="text-sm font-medium">{entry.email}</p>
