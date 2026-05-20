@@ -99,9 +99,13 @@ function SectionHeader({
   );
 }
 
-function buildResumeText(data: ResumeData, lang: Language): string {
+// Countries where Education section comes before Work Experience
+const EDU_FIRST_COUNTRIES = new Set(["IN", "FR", "BE", "CH", "DE", "AE", "SA", "PK", "BD", "LK", "NP"]);
+
+function buildResumeText(data: ResumeData, lang: Language, country = "CA"): string {
   const lines: string[] = [];
   const t = (en: string, fr: string) => lang === "fr" ? fr : en;
+  const eduFirst = EDU_FIRST_COUNTRIES.has(country);
 
   if (data.contact.trim()) {
     lines.push(data.contact.trim(), "");
@@ -111,31 +115,43 @@ function buildResumeText(data: ResumeData, lang: Language): string {
     lines.push(t("PROFESSIONAL SUMMARY", "SOMMAIRE PROFESSIONNEL"), "─".repeat(40), data.summary.trim(), "");
   }
 
-  if (data.experience.some(e => e.title || e.company || e.bullets)) {
-    lines.push(t("WORK EXPERIENCE", "EXPÉRIENCE PROFESSIONNELLE"), "─".repeat(40));
-    for (const exp of data.experience) {
-      if (!exp.title && !exp.company) continue;
-      const dateRange = exp.current
-        ? `${exp.startDate} – ${t("Present", "Présent")}`
-        : `${exp.startDate}${exp.endDate ? ` – ${exp.endDate}` : ""}`;
-      lines.push(`${exp.title}${exp.company ? ` — ${exp.company}` : ""}${exp.location ? `, ${exp.location}` : ""}${dateRange ? `  (${dateRange})` : ""}`);
-      if (exp.bullets.trim()) {
-        for (const bullet of exp.bullets.split("\n").filter(Boolean)) {
-          lines.push(`• ${bullet.replace(/^[•\-*]\s*/, "")}`);
+  function pushExperience() {
+    if (data.experience.some(e => e.title || e.company || e.bullets)) {
+      lines.push(t("WORK EXPERIENCE", "EXPÉRIENCE PROFESSIONNELLE"), "─".repeat(40));
+      for (const exp of data.experience) {
+        if (!exp.title && !exp.company) continue;
+        const dateRange = exp.current
+          ? `${exp.startDate} – ${t("Present", "Présent")}`
+          : `${exp.startDate}${exp.endDate ? ` – ${exp.endDate}` : ""}`;
+        lines.push(`${exp.title}${exp.company ? ` — ${exp.company}` : ""}${exp.location ? `, ${exp.location}` : ""}${dateRange ? `  (${dateRange})` : ""}`);
+        if (exp.bullets.trim()) {
+          for (const bullet of exp.bullets.split("\n").filter(Boolean)) {
+            lines.push(`• ${bullet.replace(/^[•\-*]\s*/, "")}`);
+          }
         }
+        lines.push("");
       }
-      lines.push("");
     }
   }
 
-  if (data.education.some(e => e.degree || e.institution)) {
-    lines.push(t("EDUCATION", "FORMATION"), "─".repeat(40));
-    for (const edu of data.education) {
-      if (!edu.degree && !edu.institution) continue;
-      lines.push(`${edu.degree}${edu.institution ? ` — ${edu.institution}` : ""}${edu.location ? `, ${edu.location}` : ""}${edu.year ? `  (${edu.year})` : ""}`);
-      if (edu.notes.trim()) lines.push(edu.notes.trim());
-      lines.push("");
+  function pushEducation() {
+    if (data.education.some(e => e.degree || e.institution)) {
+      lines.push(t("EDUCATION", "FORMATION"), "─".repeat(40));
+      for (const edu of data.education) {
+        if (!edu.degree && !edu.institution) continue;
+        lines.push(`${edu.degree}${edu.institution ? ` — ${edu.institution}` : ""}${edu.location ? `, ${edu.location}` : ""}${edu.year ? `  (${edu.year})` : ""}`);
+        if (edu.notes.trim()) lines.push(edu.notes.trim());
+        lines.push("");
+      }
     }
+  }
+
+  if (eduFirst) {
+    pushEducation();
+    pushExperience();
+  } else {
+    pushExperience();
+    pushEducation();
   }
 
   if (data.skills.trim()) {
@@ -178,7 +194,7 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
   const translateAbortRef = useRef<AbortController | null>(null);
   const translateSourceRef = useRef<string>("");
 
-  const enText = buildResumeText(data, "en");
+  const enText = buildResumeText(data, "en", targetCountry);
 
   useEffect(() => {
     if (previewLang !== "fr" || !enText.trim()) return;
@@ -233,7 +249,7 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
   }, [previewLang]);
 
   const downloadPDF = (lang: Language) => {
-    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang);
+    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
     const style = COUNTRY_STYLES[targetCountry] ?? COUNTRY_STYLES.CA;
     const ac = style.accentColor;
     const ff = style.fontFamily;
@@ -266,7 +282,7 @@ ${text.split("\n").map(line => {
   };
 
   const downloadDocx = async (lang: Language) => {
-    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang);
+    const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
     const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
     const lines = text.split("\n");
     const firstContent = lines.find(l => l.trim()) ?? "";
@@ -302,7 +318,7 @@ ${text.split("\n").map(line => {
   };
 
   const previewText = previewLang === "fr"
-    ? (translatedFr || buildResumeText(data, "fr"))
+    ? (translatedFr || buildResumeText(data, "fr", targetCountry))
     : enText;
   const countryStyle = COUNTRY_STYLES[targetCountry] ?? COUNTRY_STYLES.CA;
 

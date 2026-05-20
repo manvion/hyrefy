@@ -30,26 +30,31 @@ export default async function AdminDashboardPage({
   };
 
   try {
-    const [users, subscriptions, scans] = await Promise.all([
-      db.user.findMany({ include: { subscription: true }, orderBy: { createdAt: "desc" }, take: 15 }),
-      db.subscription.findMany({ where: { status: "PREMIUM" } }),
+    const [totalUsers, premiumSubs, scansCount, recentUsers] = await Promise.all([
+      db.user.count(),
+      db.subscription.count({ where: { status: "PREMIUM" } }),
       db.resumeScan.count(),
+      db.user.findMany({
+        include: { subscription: true },
+        orderBy: { createdAt: "desc" },
+        take: 15,
+      }),
     ]);
 
     jobSeekerStats = {
-      totalUsers: await db.user.count(),
-      premiumUsers: subscriptions.length,
-      totalScans: scans,
-      totalRevenue: subscriptions.length * 19,
-      recentUsers: users.map(u => ({
-        email: u.email,
+      totalUsers,
+      premiumUsers: premiumSubs,
+      totalScans: scansCount,
+      totalRevenue: premiumSubs * 19,
+      recentUsers: recentUsers.map(u => ({
+        email: u.email ?? "",
         name: u.name,
         subscription: u.subscription,
         createdAt: u.createdAt,
       })),
     };
-  } catch {
-    // DB not configured
+  } catch (e) {
+    console.error("[admin] user/subscription fetch error:", e);
   }
 
   try {
@@ -61,8 +66,8 @@ export default async function AdminDashboardPage({
       totalWaitlist: await (db as any).recruiterWaitlist.count(),
       recentWaitlist: waitlist,
     };
-  } catch {
-    // DB not configured or migration not run
+  } catch (e) {
+    console.error("[admin] recruiterWaitlist fetch error:", e);
   }
 
   let reports: { id: string; type: string; title: string; description: string; contactPhone: string | null; userName: string | null; userEmail: string | null; status: string; createdAt: Date }[] = [];
@@ -71,13 +76,20 @@ export default async function AdminDashboardPage({
       orderBy: { createdAt: "desc" },
       take: 50,
     });
-  } catch {
-    // table not yet migrated
+  } catch (e) {
+    console.error("[admin] userReport fetch error:", e);
   }
 
   const conversionRate = jobSeekerStats.totalUsers
     ? Math.round((jobSeekerStats.premiumUsers / jobSeekerStats.totalUsers) * 100)
     : 0;
+
+  // Pre-compute env var checks server-side (never render process.env in JSX)
+  const stripeStatus = {
+    secretKey: !!(process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.includes("dummy")),
+    priceId: !!(process.env.STRIPE_PREMIUM_PRICE_ID && !process.env.STRIPE_PREMIUM_PRICE_ID.includes("dummy")),
+    webhookSecret: !!(process.env.STRIPE_WEBHOOK_SECRET && !process.env.STRIPE_WEBHOOK_SECRET.includes("dummy")),
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -266,9 +278,9 @@ export default async function AdminDashboardPage({
                 </h3>
                 <div className="space-y-2">
                   {[
-                    { label: "Stripe Secret Key", configured: !!(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== "sk_test_dummy") },
-                    { label: "Premium Price ID", configured: !!(process.env.STRIPE_PREMIUM_PRICE_ID && process.env.STRIPE_PREMIUM_PRICE_ID !== "price_dummy") },
-                    { label: "Webhook Secret", configured: !!(process.env.STRIPE_WEBHOOK_SECRET && process.env.STRIPE_WEBHOOK_SECRET !== "whsec_dummy") },
+                    { label: "Stripe Secret Key", configured: stripeStatus.secretKey },
+                    { label: "Premium Price ID", configured: stripeStatus.priceId },
+                    { label: "Webhook Secret", configured: stripeStatus.webhookSecret },
                   ].map((item) => (
                     <div key={item.label} className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">{item.label}</span>
