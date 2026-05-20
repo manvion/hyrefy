@@ -80,10 +80,6 @@ function ClerkSignIn() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Welcome back</h1>
-          <p className="text-slate-500 dark:text-muted-foreground mt-1">Sign in to continue optimizing your resume</p>
-        </div>
         <SignIn
           appearance={clerkAppearance}
           forceRedirectUrl="/dashboard"

@@ -18,12 +18,18 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
 
 const PREMIUM_FEATURES = [
   "Unlimited resume & cover letter generations",
-  "English + French output for every job",
-  "All 9 countries with country-specific standards",
-  "PDF download — resume & cover letter",
-  "6-month full generation history",
+  "Unlimited resume builds",
+  "Unlimited interview prep sessions",
+  "All 9 countries + local standards",
+  "PDF & Word (.docx) download",
+  "Resume templates (6 designs)",
+  "All 4 rewrite modes",
+  "6-month full history",
+  "Advanced ATS scoring",
+  "English & French output",
   "Priority AI processing",
   "Priority support",
+  "Early access to new features",
 ];
 
 interface SubscriptionData {
@@ -221,9 +227,15 @@ export default function BillingPage() {
               <CardContent>
                 <p className="text-3xl font-bold mb-4 text-foreground">$0<span className="text-sm text-muted-foreground font-normal">/mo</span></p>
                 <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> 3 scans/month</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> Basic analysis</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> 3 tailored resume generations/month</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> 1 resume build/month</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> 1 interview prep session/month</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> 4 supported countries (US, CA, UK, IN)</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> PDF download (print)</li>
                   <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> Professional rewrite mode</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> Basic ATS scoring</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> English & French output</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-muted-foreground" /> Community support</li>
                 </ul>
               </CardContent>
             </Card>

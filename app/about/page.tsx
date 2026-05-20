@@ -93,7 +93,7 @@ export default function AboutPage() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-16">
           {[
-            { value: "10,000+", label: "Job seekers helped" },
+            { value: "1,000+", label: "Job seekers helped" },
             { value: "9",       label: "Countries supported" },
             { value: "2",       label: "Languages: EN & FR" },
           ].map((s) => (

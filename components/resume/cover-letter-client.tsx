@@ -67,13 +67,39 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
     toast({ title: "Copied!", description: "Cover letter copied to clipboard." });
   };
 
-  const downloadTxt = () => {
+  const downloadDocx = async () => {
     if (!result) return;
-    const blob = new Blob([result.coverLetter], { type: "text/plain" });
+    const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
+    const text = result.coverLetter;
+    const lines = text.split("\n");
+    const firstContent = lines.find(l => l.trim()) ?? "";
+    const children: InstanceType<typeof Paragraph>[] = [];
+    let passedName = false;
+    for (const line of lines) {
+      const t = line.trim();
+      if (line === firstContent && !passedName) {
+        passedName = true;
+        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 48, color: "0A66C2" })], alignment: AlignmentType.CENTER, spacing: { after: 120 } }));
+        continue;
+      }
+      if (!passedName) continue;
+      if (!t) { children.push(new Paragraph({ text: "" })); continue; }
+      if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) {
+        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 22, color: "0A66C2" })], spacing: { before: 240, after: 80 }, border: { bottom: { color: "0A66C2", size: 6, style: BorderStyle.SINGLE, space: 4 } } }));
+        continue;
+      }
+      if (t.match(/^[•\-–—*]\s/)) {
+        children.push(new Paragraph({ children: [new TextRun({ text: t.replace(/^[•\-–—*]\s/, ""), size: 20 })], bullet: { level: 0 } }));
+        continue;
+      }
+      children.push(new Paragraph({ children: [new TextRun({ text: t, size: 20 })], spacing: { after: 40 } }));
+    }
+    const doc = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(doc);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `cover-letter-${outputLanguage}-${Date.now()}.txt`;
+    a.download = `cover-letter-${outputLanguage}-${Date.now()}.docx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -232,9 +258,9 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
                     {copied ? <Check className="mr-2 h-4 w-4 text-emerald-400" /> : <Copy className="mr-2 h-4 w-4" />}
                     {copied ? (uiLang === "fr" ? "Copié!" : "Copied!") : (uiLang === "fr" ? "Copier" : "Copy")}
                   </Button>
-                  <Button onClick={downloadTxt} variant="gradient" className="flex-1">
+                  <Button onClick={downloadDocx} variant="gradient" className="flex-1">
                     <Download className="mr-2 h-4 w-4" />
-                    {uiLang === "fr" ? "Télécharger (.txt)" : "Download (.txt)"}
+                    {uiLang === "fr" ? "Télécharger (.docx)" : "Download (.docx)"}
                   </Button>
                 </div>
               </CardContent>

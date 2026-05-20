@@ -10,9 +10,13 @@ export function verifyAdminPassword(password: string): boolean {
 }
 
 export async function getAdminSession(): Promise<boolean> {
-  const cookieStore = await cookies();
-  const session = cookieStore.get(SESSION_COOKIE);
-  return session?.value === SESSION_VALUE;
+  try {
+    const cookieStore = await cookies();
+    const session = cookieStore.get(SESSION_COOKIE);
+    return session?.value === SESSION_VALUE;
+  } catch {
+    return false;
+  }
 }
 
 export async function requireAdmin() {

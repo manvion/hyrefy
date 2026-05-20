@@ -203,13 +203,38 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
     URL.revokeObjectURL(url);
   };
 
-  const downloadTxt = (lang: Language) => {
+  const downloadDocx = async (lang: Language) => {
     const text = buildResumeText(data, lang);
-    const blob = new Blob([text], { type: "text/plain" });
+    const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
+    const lines = text.split("\n");
+    const firstContent = lines.find(l => l.trim()) ?? "";
+    const children: InstanceType<typeof Paragraph>[] = [];
+    let passedName = false;
+    for (const line of lines) {
+      const t = line.trim();
+      if (line === firstContent) {
+        passedName = true;
+        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 48, color: "0A66C2" })], alignment: AlignmentType.CENTER, spacing: { after: 120 } }));
+        continue;
+      }
+      if (!passedName) continue;
+      if (!t) { children.push(new Paragraph({ text: "" })); continue; }
+      if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) {
+        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 22, color: "0A66C2" })], spacing: { before: 240, after: 80 }, border: { bottom: { color: "0A66C2", size: 6, style: BorderStyle.SINGLE, space: 4 } } }));
+        continue;
+      }
+      if (t.match(/^[•\-–—*]\s/)) {
+        children.push(new Paragraph({ children: [new TextRun({ text: t.replace(/^[•\-–—*]\s/, ""), size: 20 })], bullet: { level: 0 } }));
+        continue;
+      }
+      children.push(new Paragraph({ children: [new TextRun({ text: t, size: 20 })], spacing: { after: 40 } }));
+    }
+    const doc = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(doc);
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `resume-${lang}.txt`;
+    a.download = `resume-${lang}.docx`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -494,8 +519,8 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
                   <Button size="sm" variant="gradient" className="flex-1 h-7 text-xs" onClick={() => downloadPDF(lang)}>
                     <Download className="h-3 w-3 mr-1" />PDF
                   </Button>
-                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => downloadTxt(lang)}>
-                    <FileText className="h-3 w-3 mr-1" />.txt
+                  <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => downloadDocx(lang)}>
+                    <FileText className="h-3 w-3 mr-1" />.docx
                   </Button>
                 </div>
               </div>

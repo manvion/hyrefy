@@ -80,10 +80,6 @@ function ClerkSignUp() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-foreground">Create your account</h1>
-          <p className="text-slate-500 dark:text-muted-foreground mt-1">Free forever. No credit card required.</p>
-        </div>
         <SignUp
           appearance={clerkAppearance}
           forceRedirectUrl="/dashboard"

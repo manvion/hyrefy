@@ -57,7 +57,7 @@ export const translations = {
       ],
     },
     testimonials: {
-      title: "Trusted by 10,000+ job seekers",
+      title: "Trusted by 1,000+ job seekers",
       subtitle: "Real results from real people who stopped guessing and started landing interviews.",
     },
     pricing: {
@@ -108,7 +108,7 @@ export const translations = {
     },
     cta: {
       title: "Your next interview is one generation away",
-      subtitle: "Join 10,000+ job seekers who stopped sending generic resumes and started landing interviews.",
+      subtitle: "Join 1,000+ job seekers who stopped sending generic resumes and started landing interviews.",
       button: "Generate my resume — it's free",
       trust: "No credit card required · Cancel anytime",
     },
