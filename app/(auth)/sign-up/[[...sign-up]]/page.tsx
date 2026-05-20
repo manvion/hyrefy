@@ -25,6 +25,9 @@ const clerkAppearance = {
     fontFamily: "inherit",
     fontSize: "14px",
   },
+  elements: {
+    formFieldHintText: { display: "none" },
+  },
 };
 
 function DemoSignUp() {

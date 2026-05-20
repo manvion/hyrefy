@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { RichTextEditor, plainTextToHtml, htmlToPlainText } from "@/components/ui/rich-text-editor";
 import {
   Sparkles, Download, Copy, Check, ChevronRight, Globe,
   Briefcase, FileText, Mail, ArrowLeft, TrendingUp, Zap,
@@ -103,10 +104,10 @@ function DocumentPanel({
   generatedLang: Language;
 }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [editHtml, setEditHtml] = useState("");
   const [translating, setTranslating] = useState<Language | null>(null);
   const [translated, setTranslated] = useState<Partial<Record<Language, string>>>({});
   const [copied, setCopied] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const ensureLang = useCallback(async (lang: Language): Promise<string> => {
     if (lang === generatedLang) return content;
@@ -193,7 +194,8 @@ function DocumentPanel({
           onClick={() => {
             const next = !isEditing;
             setIsEditing(next);
-            if (next) setTimeout(() => textareaRef.current?.focus(), 50);
+            if (next) setEditHtml(plainTextToHtml(content));
+            else onContentChange(htmlToPlainText(editHtml));
           }}
           className={cn(
             "flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-lg transition-all active:scale-[0.97]",
@@ -208,14 +210,13 @@ function DocumentPanel({
       </div>
 
       {/* Document body */}
-      <div className="flex-1 overflow-y-auto bg-background" style={{ minHeight: 540 }}>
+      <div className="flex-1 overflow-y-auto bg-background">
         {isEditing ? (
-          <textarea
-            ref={textareaRef}
-            className="w-full p-5 text-sm leading-relaxed font-mono bg-background text-foreground border-none outline-none resize-none"
-            style={{ minHeight: 540 }}
-            value={content}
-            onChange={e => onContentChange(e.target.value)}
+          <RichTextEditor
+            content={editHtml}
+            onChange={setEditHtml}
+            minHeight={540}
+            className="rounded-none border-0 border-none"
           />
         ) : (
           <pre className="p-5 text-sm leading-relaxed whitespace-pre-wrap font-sans text-foreground/90" style={{ minHeight: 540 }}>

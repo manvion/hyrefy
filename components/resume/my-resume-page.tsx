@@ -9,9 +9,10 @@ import { toast } from "@/components/ui/toaster";
 import {
   Upload, FileText, X, CheckCircle, Loader2, AlertCircle,
   Sparkles, Search, Trash2, RefreshCw, Calendar, Eye, EyeOff,
-  Shield, Zap, FileCheck, Palette, Download,
+  Shield, Zap, FileCheck, Palette, Download, Edit3, Save,
 } from "lucide-react";
 import { TemplateSelectorModal } from "@/components/resume/resume-templates";
+import { RichTextEditor, plainTextToHtml, htmlToPlainText } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
 
@@ -128,12 +129,14 @@ function ResumeDocumentPreview({ text, fontFamily = "'Georgia', serif", accentCo
 
 export function MyResumePage({ existingResume: initialResume }: Props) {
   const [existingResume, setExistingResume] = useState(initialResume);
-  const [mode, setMode] = useState<"preview" | "upload">(initialResume ? "preview" : "upload");
+  const [mode, setMode] = useState<"preview" | "upload" | "edit">(initialResume ? "preview" : "upload");
   const [showFullText, setShowFullText] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [showEditStyle, setShowEditStyle] = useState(false);
   const [fontFamily, setFontFamily] = useState("'Georgia', serif");
   const [accentColor, setAccentColor] = useState("#0A66C2");
+  const [editHtml, setEditHtml] = useState("");
+  const [saving, setSaving] = useState(false);
 
   // Upload state
   const [file, setFile] = useState<File | null>(null);
@@ -203,6 +206,61 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
       setDeleting(false);
     }
   };
+
+  const handleOpenEdit = () => {
+    if (!existingResume) return;
+    setEditHtml(plainTextToHtml(existingResume.rawText));
+    setMode("edit");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!existingResume) return;
+    setSaving(true);
+    try {
+      const newText = htmlToPlainText(editHtml);
+      const res = await fetch(`/api/resume/${existingResume.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawText: newText }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      setExistingResume(prev => prev ? { ...prev, rawText: newText, updatedAt: new Date() } : prev);
+      setMode("preview");
+      toast({ title: "Saved!", description: "Your resume has been updated.", variant: "success" });
+    } catch {
+      toast({ title: "Save failed", description: "Could not save changes.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // ── Edit Mode ─────────────────────────────────────────────────────────────
+  if (mode === "edit" && existingResume) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 max-w-3xl mx-auto">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">Edit Resume</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">Format your resume — changes saved to your master copy</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => setMode("preview")} className="text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg border border-border/40 hover:bg-accent">
+              Cancel
+            </button>
+            <button
+              onClick={handleSaveEdit}
+              disabled={saving}
+              className="flex items-center gap-1.5 text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-60"
+            >
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+              Save changes
+            </button>
+          </div>
+        </div>
+        <RichTextEditor content={editHtml} onChange={setEditHtml} minHeight={600} />
+      </motion.div>
+    );
+  }
 
   // ── Preview Mode ──────────────────────────────────────────────────────────
   if (mode === "preview" && existingResume) {
@@ -286,7 +344,20 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
           <Button
             variant="outline"
             size="sm"
-            className={cn("w-full h-10 gap-1.5", showEditStyle && "border-primary text-primary")}
+            className="w-full h-10 gap-1.5"
+            onClick={handleOpenEdit}
+          >
+            <Edit3 className="h-3.5 w-3.5" />
+            Edit Text
+          </Button>
+        </div>
+
+        {/* Style controls */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={cn("h-8 text-xs gap-1.5", showEditStyle && "border-primary text-primary border")}
             onClick={() => setShowEditStyle(v => !v)}
           >
             <Palette className="h-3.5 w-3.5" />
