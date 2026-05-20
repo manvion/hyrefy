@@ -1,29 +1,53 @@
 "use client";
 
-export const COUNTRY_STYLES: Record<string, { accentColor: string; fontFamily: string }> = {
-  US: { accentColor: "#0A66C2", fontFamily: "'Arial', sans-serif" },
-  CA: { accentColor: "#0A66C2", fontFamily: "'Arial', sans-serif" },
-  GB: { accentColor: "#1a1a2e", fontFamily: "'Times New Roman', serif" },
-  AU: { accentColor: "#0d7377", fontFamily: "'Arial', sans-serif" },
-  NZ: { accentColor: "#0d7377", fontFamily: "'Arial', sans-serif" },
-  FR: { accentColor: "#6c5ce7", fontFamily: "'Garamond', 'Georgia', serif" },
-  BE: { accentColor: "#6c5ce7", fontFamily: "'Garamond', 'Georgia', serif" },
-  CH: { accentColor: "#2d3436", fontFamily: "'Calibri', 'Trebuchet MS', sans-serif" },
-  IN: { accentColor: "#d63031", fontFamily: "'Arial', sans-serif" },
+export type CountryStyle = {
+  accentColor: string;
+  fontFamily: string;
+  nameAlign: "center" | "left";
+  sectionStyle: "underline" | "left-border" | "minimal" | "filled";
+};
+
+export const COUNTRY_STYLES: Record<string, CountryStyle> = {
+  US: { accentColor: "#0A66C2", fontFamily: "'Arial', sans-serif",                    nameAlign: "center", sectionStyle: "underline"    },
+  CA: { accentColor: "#003087", fontFamily: "'Calibri', 'Arial', sans-serif",         nameAlign: "center", sectionStyle: "underline"    },
+  GB: { accentColor: "#1a1a2e", fontFamily: "'Times New Roman', serif",              nameAlign: "left",   sectionStyle: "left-border"  },
+  AU: { accentColor: "#0d7377", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "underline"    },
+  NZ: { accentColor: "#007a5e", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "underline"    },
+  FR: { accentColor: "#6c5ce7", fontFamily: "'Garamond', 'Georgia', serif",          nameAlign: "center", sectionStyle: "minimal"      },
+  BE: { accentColor: "#5a4db0", fontFamily: "'Garamond', 'Georgia', serif",          nameAlign: "center", sectionStyle: "minimal"      },
+  CH: { accentColor: "#2d3436", fontFamily: "'Calibri', 'Trebuchet MS', sans-serif", nameAlign: "left",   sectionStyle: "filled"       },
+  IN: { accentColor: "#d63031", fontFamily: "'Arial', sans-serif",                    nameAlign: "center", sectionStyle: "underline"    },
 };
 
 export function ResumePreview({
   text,
   accentColor = "#0A66C2",
   fontFamily = "'Arial', sans-serif",
+  nameAlign = "center",
+  sectionStyle = "underline",
 }: {
   text: string;
   accentColor?: string;
   fontFamily?: string;
+  nameAlign?: "center" | "left";
+  sectionStyle?: "underline" | "left-border" | "minimal" | "filled";
 }) {
   if (!text.trim()) return null;
   const lines = text.split("\n");
   const firstContentLine = lines.find(l => l.trim());
+
+  const getSectionHeaderStyle = (): React.CSSProperties => {
+    switch (sectionStyle) {
+      case "left-border":
+        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: accentColor, borderLeft: `3px solid ${accentColor}`, paddingLeft: "8px" };
+      case "minimal":
+        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: accentColor };
+      case "filled":
+        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: accentColor, padding: "2px 8px" };
+      default:
+        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: accentColor, borderBottom: `1.5px solid ${accentColor}55`, paddingBottom: "2px" };
+    }
+  };
 
   return (
     <div
@@ -39,7 +63,7 @@ export function ResumePreview({
             return (
               <h1
                 key={i}
-                style={{ fontSize: "22pt", fontWeight: 700, textAlign: "center", color: accentColor, letterSpacing: "-0.02em", marginBottom: "2px" }}
+                style={{ fontSize: "22pt", fontWeight: 700, textAlign: nameAlign, color: accentColor, letterSpacing: "-0.02em", marginBottom: "2px" }}
               >
                 {trimmed}
               </h1>
@@ -51,7 +75,7 @@ export function ResumePreview({
             (trimmed.includes("|") || trimmed.includes("@") || trimmed.match(/\+\d/) || trimmed.match(/linkedin/i))
           ) {
             return (
-              <p key={i} style={{ textAlign: "center", fontSize: "9.5pt", color: "#4b5563", marginBottom: "2px" }}>
+              <p key={i} style={{ textAlign: nameAlign, fontSize: "9.5pt", color: "#4b5563", marginBottom: "2px" }}>
                 {trimmed}
               </p>
             );
@@ -65,10 +89,7 @@ export function ResumePreview({
           ) {
             return (
               <div key={i} style={{ marginTop: "18px", marginBottom: "6px" }}>
-                <p style={{
-                  fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-                  color: accentColor, borderBottom: `1.5px solid ${accentColor}55`, paddingBottom: "2px"
-                }}>
+                <p style={getSectionHeaderStyle()}>
                   {trimmed}
                 </p>
               </div>

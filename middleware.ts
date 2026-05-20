@@ -47,11 +47,12 @@ export function middleware(request: NextRequest) {
   const lastSegment = segments[segments.length - 1] ?? "";
 
   // ─── Admin dashboard protection ────────────────────────────────────────────
-  if (url.pathname.startsWith("/admin/dashboard")) {
+  if (url.pathname.startsWith("/admin") && !url.pathname.startsWith("/admin/login")) {
     const session = request.cookies.get(ADMIN_SESSION_COOKIE);
     if (session?.value !== getAdminSessionValue()) {
       return NextResponse.redirect(new URL("/admin/login", request.url));
     }
+    return NextResponse.next();
   }
 
   // ─── User-specific URL rewrite ─────────────────────────────────────────────

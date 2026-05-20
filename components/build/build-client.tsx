@@ -586,6 +586,8 @@ ${text.split("\n").map(line => {
                   text={previewText}
                   accentColor={countryStyle.accentColor}
                   fontFamily={countryStyle.fontFamily}
+                  nameAlign={countryStyle.nameAlign}
+                  sectionStyle={countryStyle.sectionStyle}
                 />
               </div>
             ) : (

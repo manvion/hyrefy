@@ -220,10 +220,12 @@ export function RichTextEditor({ content, onChange, className, minHeight = 400 }
 
 export function htmlToPlainText(html: string): string {
   return html
+    // Tiptap wraps list item text in <p>: <li><p>text</p></li> → "• text\n"
+    .replace(/<li[^>]*>\s*<p[^>]*>([\s\S]*?)<\/p>\s*<\/li>/gi, "• $1\n")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/p>/gi, "\n")
     .replace(/<\/h[1-6]>/gi, "\n")
-    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/li>/gi, "")
     .replace(/<li>/gi, "• ")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/g, " ")

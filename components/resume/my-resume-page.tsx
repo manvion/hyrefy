@@ -9,9 +9,12 @@ import { toast } from "@/components/ui/toaster";
 import {
   Upload, FileText, X, CheckCircle, Loader2, AlertCircle,
   Sparkles, Search, Trash2, RefreshCw, Calendar, Eye, EyeOff,
-  Shield, Zap, FileCheck, Palette, Download, Edit3, Save,
+  Shield, Zap, FileCheck, Palette, Download, Edit3, Save, Lock, FileType2,
 } from "lucide-react";
-import { TemplateSelectorModal } from "@/components/resume/resume-templates";
+import {
+  TemplateSelectorModal, TEMPLATES, openPrintWithTemplate, downloadDocxWithTemplate,
+  type TemplateId,
+} from "@/components/resume/resume-templates";
 import { RichTextEditor, plainTextToHtml, htmlToPlainText } from "@/components/ui/rich-text-editor";
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
@@ -26,6 +29,7 @@ interface ExistingResume {
 
 interface Props {
   existingResume: ExistingResume | null;
+  isPremium?: boolean;
 }
 
 // ─── Document preview (PDF-like rendering) ────────────────────────────────────
@@ -127,11 +131,12 @@ function ResumeDocumentPreview({ text, fontFamily = "'Georgia', serif", accentCo
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function MyResumePage({ existingResume: initialResume }: Props) {
+export function MyResumePage({ existingResume: initialResume, isPremium = false }: Props) {
   const [existingResume, setExistingResume] = useState(initialResume);
   const [mode, setMode] = useState<"preview" | "upload" | "edit">(initialResume ? "preview" : "upload");
   const [showFullText, setShowFullText] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateId | null>(null);
   const [showEditStyle, setShowEditStyle] = useState(false);
   const [fontFamily, setFontFamily] = useState("'Georgia', serif");
   const [accentColor, setAccentColor] = useState("#0A66C2");
@@ -419,8 +424,65 @@ export function MyResumePage({ existingResume: initialResume }: Props) {
             text={existingResume.rawText}
             filename={existingResume.fileName}
             onClose={() => setTemplateOpen(false)}
+            onApply={(tplId) => {
+              setSelectedTemplate(tplId);
+              const tpl = TEMPLATES.find(t => t.id === tplId);
+              if (tpl) { setAccentColor(tpl.accentColor); setFontFamily(tpl.fontFamily); }
+            }}
+            initialTemplate={selectedTemplate ?? "modern"}
           />
         )}
+
+        {/* Download section — shows after template is selected */}
+        {selectedTemplate && (() => {
+          const tpl = TEMPLATES.find(t => t.id === selectedTemplate)!;
+          const slug = existingResume.fileName.toLowerCase().replace(/\s+/g, "-").replace(/\..*$/, "");
+          return (
+            <div className="rounded-xl border border-border/50 bg-card/60 p-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{tpl.flag}</span>
+                  <div>
+                    <p className="text-sm font-semibold">{tpl.name} template applied</p>
+                    <p className="text-xs text-muted-foreground">{tpl.country} · {tpl.desc}</p>
+                  </div>
+                </div>
+                {isPremium ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 h-8 text-xs"
+                      onClick={() => openPrintWithTemplate(existingResume.rawText, selectedTemplate, slug)}
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      PDF
+                    </Button>
+                    <Button
+                      variant="gradient"
+                      size="sm"
+                      className="gap-1.5 h-8 text-xs"
+                      onClick={() => downloadDocxWithTemplate(existingResume.rawText, selectedTemplate, `${slug}.docx`)}
+                    >
+                      <FileType2 className="h-3.5 w-3.5" />
+                      Word (.docx)
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Lock className="h-3.5 w-3.5" />
+                      Download requires Premium
+                    </div>
+                    <Button asChild variant="gradient" size="sm" className="h-8 text-xs">
+                      <Link href="/billing">Upgrade</Link>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Document preview */}
         {existingResume.rawText && (

@@ -4,7 +4,7 @@ import { createPortal } from "react-dom";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
-import { X, Download, FileText, FileType2, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 
 export type TemplateId = "modern" | "classic" | "clean" | "executive" | "minimal" | "bold";
 
@@ -15,14 +15,15 @@ export const TEMPLATES: {
   flag: string;
   desc: string;
   accentColor: string;
+  fontFamily: string;
   preview: string;
 }[] = [
-  { id: "modern",    name: "Modern",    country: "USA / Canada",   flag: "🇺🇸", desc: "Clean sidebar, ATS-friendly",   accentColor: "#0A66C2", preview: "bg-blue-600"    },
-  { id: "classic",   name: "Classic",   country: "UK / Ireland",   flag: "🇬🇧", desc: "Formal, two-column header",     accentColor: "#1a1a2e", preview: "bg-slate-800"  },
-  { id: "clean",     name: "Clean",     country: "Australia / NZ", flag: "🇦🇺", desc: "Spacious, modern sans-serif",   accentColor: "#0d7377", preview: "bg-teal-700"   },
-  { id: "executive", name: "Executive", country: "Germany / EU",   flag: "🇩🇪", desc: "Structured, detail-oriented",  accentColor: "#2d3436", preview: "bg-gray-800"   },
-  { id: "minimal",   name: "Minimal",   country: "France / BE",    flag: "🇫🇷", desc: "Elegant, whitespace-forward",  accentColor: "#6c5ce7", preview: "bg-violet-700" },
-  { id: "bold",      name: "Bold",      country: "India / UAE",    flag: "🇮🇳", desc: "Strong header, impact-first",  accentColor: "#d63031", preview: "bg-red-700"    },
+  { id: "modern",    name: "Modern",    country: "USA / Canada",   flag: "🇺🇸", desc: "Clean sidebar, ATS-friendly",   accentColor: "#0A66C2", fontFamily: "'Calibri', 'Arial', sans-serif",           preview: "bg-blue-600"    },
+  { id: "classic",   name: "Classic",   country: "UK / Ireland",   flag: "🇬🇧", desc: "Formal, two-column header",     accentColor: "#1a1a2e", fontFamily: "'Georgia', 'Times New Roman', serif",      preview: "bg-slate-800"  },
+  { id: "clean",     name: "Clean",     country: "Australia / NZ", flag: "🇦🇺", desc: "Spacious, modern sans-serif",   accentColor: "#0d7377", fontFamily: "'Trebuchet MS', 'Helvetica Neue', sans-serif", preview: "bg-teal-700"   },
+  { id: "executive", name: "Executive", country: "Germany / EU",   flag: "🇩🇪", desc: "Structured, detail-oriented",  accentColor: "#2d3436", fontFamily: "'Arial', sans-serif",                      preview: "bg-gray-800"   },
+  { id: "minimal",   name: "Minimal",   country: "France / BE",    flag: "🇫🇷", desc: "Elegant, whitespace-forward",  accentColor: "#6c5ce7", fontFamily: "'Helvetica Neue', 'Arial', sans-serif",    preview: "bg-violet-700" },
+  { id: "bold",      name: "Bold",      country: "India / UAE",    flag: "🇮🇳", desc: "Strong header, impact-first",  accentColor: "#d63031", fontFamily: "'Arial', 'Helvetica', sans-serif",         preview: "bg-red-700"    },
 ];
 
 function buildTemplateHtml(text: string, templateId: TemplateId, title: string): string {
@@ -339,7 +340,7 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${styles[templateId]}</style></head><body>${bodyHtml[templateId]}<script>window.onload=()=>window.print();<\/script></body></html>`;
 }
 
-function openPrintWithTemplate(text: string, templateId: TemplateId, title: string) {
+export function openPrintWithTemplate(text: string, templateId: TemplateId, title: string) {
   const html = buildFullHtml(text, templateId, title);
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);
@@ -350,7 +351,7 @@ function openPrintWithTemplate(text: string, templateId: TemplateId, title: stri
   URL.revokeObjectURL(url);
 }
 
-async function downloadDocxWithTemplate(text: string, templateId: TemplateId, filename: string) {
+export async function downloadDocxWithTemplate(text: string, templateId: TemplateId, filename: string) {
   const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle, ShadingType } = await import("docx");
   const tpl = TEMPLATES.find(t => t.id === templateId)!;
   const accent = tpl.accentColor;
@@ -429,16 +430,16 @@ interface TemplateSelectorProps {
   text: string;
   filename: string;
   onClose: () => void;
+  onApply: (templateId: TemplateId) => void;
+  initialTemplate?: TemplateId;
 }
 
-export function TemplateSelectorModal({ text, filename, onClose }: TemplateSelectorProps) {
-  const [selected, setSelected] = useState<TemplateId>("modern");
+export function TemplateSelectorModal({ text, filename, onClose, onApply, initialTemplate = "modern" }: TemplateSelectorProps) {
+  const [selected, setSelected] = useState<TemplateId>(initialTemplate);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
   if (!mounted) return null;
-
-  const slug = filename.toLowerCase().replace(/\s+/g, "-").replace(/\..*$/, "");
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] bg-black/70 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
@@ -451,7 +452,7 @@ export function TemplateSelectorModal({ text, filename, onClose }: TemplateSelec
           <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-border/30">
             <div>
               <h2 className="text-lg font-bold text-foreground">Choose a Template</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">Country-optimised designs — select and download as PDF or Word</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Country-optimised designs — select one to apply to your preview</p>
             </div>
             <button
               type="button"
@@ -502,22 +503,17 @@ export function TemplateSelectorModal({ text, filename, onClose }: TemplateSelec
           </div>
 
           {/* Actions */}
-          <div className="px-6 pb-6 flex flex-col sm:flex-row gap-3">
-            <Button
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={() => openPrintWithTemplate(text, selected, slug)}
-            >
-              <FileText className="h-4 w-4" />
-              Download PDF
+          <div className="px-6 pb-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={onClose}>
+              Cancel
             </Button>
             <Button
               variant="gradient"
-              className="flex-1 gap-2"
-              onClick={() => downloadDocxWithTemplate(text, selected, `${slug}.docx`)}
+              className="gap-2"
+              onClick={() => { onApply(selected); onClose(); }}
             >
-              <FileType2 className="h-4 w-4" />
-              Download Word (.docx)
+              <Check className="h-4 w-4" />
+              Apply Template
             </Button>
           </div>
         </div>

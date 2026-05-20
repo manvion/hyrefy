@@ -20,7 +20,7 @@ export async function PATCH(
     const resume = await db.resume.findFirst({ where: { id, userId: user.id } });
     if (!resume) return NextResponse.json({ error: "Resume not found" }, { status: 404 });
 
-    await db.resume.update({ where: { id }, data: { rawText, updatedAt: new Date() } });
+    await db.resume.update({ where: { id }, data: { rawText } });
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: "Update failed" }, { status: 500 });

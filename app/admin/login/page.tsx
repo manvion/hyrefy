@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Lock, Loader2 } from "lucide-react";
@@ -11,7 +10,6 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,13 +23,13 @@ export default function AdminLoginPage() {
         body: JSON.stringify({ password }),
       });
       if (res.ok) {
-        router.push("/admin/dashboard");
+        window.location.href = "/admin/dashboard";
       } else {
         setError("Invalid password. Please try again.");
+        setLoading(false);
       }
     } catch {
       setError("Connection error. Please try again.");
-    } finally {
       setLoading(false);
     }
   };

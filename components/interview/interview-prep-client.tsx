@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ChevronDown, ChevronUp, BookOpen, Lightbulb, Target, Mic } from "lucide-react";
+import { Sparkles, ChevronDown, ChevronUp, BookOpen, Lightbulb, Target, Mic, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
+import Link from "next/link";
 
 interface InterviewQuestion {
   question: string;
@@ -31,7 +32,13 @@ const TYPE_COLORS: Record<string, string> = {
 const LEVELS = ["Entry Level", "Mid Level", "Senior", "Lead", "Manager", "Director", "VP", "Executive"];
 const INDUSTRIES = ["Technology", "Finance", "Healthcare", "Marketing", "Sales", "Product", "Design", "Data", "Operations", "Legal"];
 
-export function InterviewPrepClient() {
+interface InterviewPrepClientProps {
+  isPremium?: boolean;
+  prepsUsed?: number;
+  prepsLimit?: number;
+}
+
+export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLimit = 1 }: InterviewPrepClientProps) {
   const [form, setForm] = useState({
     jobTitle: "",
     company: "",
@@ -43,6 +50,8 @@ export function InterviewPrepClient() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+
+  const atLimit = !isPremium && prepsUsed >= prepsLimit;
 
   const handleGenerate = async () => {
     if (!form.jobTitle) return;
@@ -69,6 +78,37 @@ export function InterviewPrepClient() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Usage banner for free users */}
+      {!isPremium && (
+        <div className={cn(
+          "flex items-center justify-between gap-3 rounded-xl border px-4 py-3",
+          atLimit
+            ? "border-destructive/30 bg-destructive/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        )}>
+          <div className="flex items-center gap-2.5">
+            {atLimit ? <Lock className="h-4 w-4 text-destructive shrink-0" /> : <Mic className="h-4 w-4 text-amber-500 shrink-0" />}
+            <div>
+              <p className="text-sm font-medium">
+                {atLimit
+                  ? "Monthly limit reached"
+                  : `${prepsUsed}/${prepsLimit} interview prep used this month`}
+              </p>
+              {atLimit && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Upgrade to Premium for unlimited access
+                </p>
+              )}
+            </div>
+          </div>
+          {atLimit && (
+            <Button asChild variant="gradient" size="sm" className="shrink-0 h-8 text-xs">
+              <Link href="/billing">Upgrade</Link>
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Input form */}
       <div className="rounded-2xl border border-border/50 bg-card/30 p-6">
         <h2 className="text-base font-semibold mb-4 flex items-center gap-2">
@@ -128,12 +168,14 @@ export function InterviewPrepClient() {
         {error && <p className="text-sm text-destructive mt-3">{error}</p>}
         <Button
           onClick={handleGenerate}
-          disabled={!form.jobTitle || loading}
+          disabled={!form.jobTitle || loading || atLimit}
           className="mt-4 w-full"
           size="lg"
         >
           {loading ? (
             <><div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />Generating Questions...</>
+          ) : atLimit ? (
+            <><Lock className="h-4 w-4 mr-2" />Monthly Limit Reached</>
           ) : (
             <><Sparkles className="h-4 w-4 mr-2" />Generate Interview Questions</>
           )}

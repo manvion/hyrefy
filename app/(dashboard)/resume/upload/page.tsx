@@ -17,18 +17,19 @@ export default async function UploadPage() {
     createdAt: Date;
     updatedAt: Date;
   } | null = null;
+  let isPremium = false;
 
   if (userId) {
     try {
-      const user = await db.user.findUnique({ where: { clerkId: userId } });
+      const user = await db.user.findUnique({
+        where: { clerkId: userId },
+        include: { subscription: true },
+      });
       if (user) {
-        // Single query: prefer master (isMaster desc), then most recent
+        isPremium = user.subscription?.status === "PREMIUM";
         const resume = await db.resume.findFirst({
           where: { userId: user.id },
-          orderBy: [
-            { isMaster: "desc" },
-            { updatedAt: "desc" },
-          ],
+          orderBy: [{ isMaster: "desc" }, { updatedAt: "desc" }],
           select: { id: true, fileName: true, rawText: true, createdAt: true, updatedAt: true },
         });
         if (resume && resume.rawText && resume.rawText.trim().length > 0) {
@@ -40,5 +41,5 @@ export default async function UploadPage() {
     }
   }
 
-  return <MyResumePage existingResume={existingResume} />;
+  return <MyResumePage existingResume={existingResume} isPremium={isPremium} />;
 }

@@ -33,24 +33,40 @@ export async function POST(request: NextRequest) {
 
   if (!jobTitle) return NextResponse.json({ error: "Job title required" }, { status: 400 });
 
+  const user = await db.user.findUnique({ where: { clerkId }, include: { subscription: true } });
+  if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
+
+  const isPremium = user.subscription?.status === "PREMIUM";
+  if (!isPremium) {
+    const limit = user.subscription?.interviewPrepsLimit ?? 1;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const thisMonthCount = await dbc.interviewPrep.count({
+      where: { userId: user.id, createdAt: { gte: monthStart } },
+    });
+    if (thisMonthCount >= limit) {
+      return NextResponse.json(
+        { error: "Monthly limit reached. Upgrade to Premium for unlimited access.", used: thisMonthCount, limit },
+        { status: 403 }
+      );
+    }
+  }
+
   try {
     const result = await generateInterviewPrep({ jobTitle, company, jobDescription, industry, level, resumeText });
 
     try {
-      const user = await db.user.findUnique({ where: { clerkId } });
-      if (user) {
-        await dbc.interviewPrep.create({
-          data: {
-            userId: user.id,
-            jobTitle,
-            company: company || null,
-            jobDescription: jobDescription || null,
-            industry: industry || null,
-            level: level || null,
-            questions: JSON.parse(JSON.stringify(result.questions)),
-          },
-        });
-      }
+      await dbc.interviewPrep.create({
+        data: {
+          userId: user.id,
+          jobTitle,
+          company: company || null,
+          jobDescription: jobDescription || null,
+          industry: industry || null,
+          level: level || null,
+          questions: JSON.parse(JSON.stringify(result.questions)),
+        },
+      });
     } catch {
       // DB save optional — don't fail the request
     }

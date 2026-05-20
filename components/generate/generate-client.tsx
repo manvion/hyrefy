@@ -97,6 +97,7 @@ function UsageBanner({ used, limit, isPremium }: { used: number; limit: number; 
 function DocumentPanel({
   title, icon: Icon, content, onContentChange, fileName, generatedLang,
   accentColor = "#0A66C2", fontFamily = "'Arial', sans-serif", isCoverLetter = false,
+  nameAlign = "center", sectionStyle = "underline",
 }: {
   title: string;
   icon: React.ElementType;
@@ -107,6 +108,8 @@ function DocumentPanel({
   accentColor?: string;
   fontFamily?: string;
   isCoverLetter?: boolean;
+  nameAlign?: "center" | "left";
+  sectionStyle?: "underline" | "left-border" | "minimal" | "filled";
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editHtml, setEditHtml] = useState("");
@@ -207,7 +210,7 @@ function DocumentPanel({
           </div>
         ) : (
           <div className="bg-gray-100/80 dark:bg-gray-200/10 py-4 px-3 min-h-[540px]">
-            <ResumePreview text={content} accentColor={accentColor} fontFamily={fontFamily} />
+            <ResumePreview text={content} accentColor={accentColor} fontFamily={fontFamily} nameAlign={nameAlign} sectionStyle={sectionStyle} />
           </div>
         )}
       </div>
@@ -750,6 +753,8 @@ export function GenerateClient({
                 generatedLang={form.outputLanguage}
                 accentColor={countryStyle.accentColor}
                 fontFamily={countryStyle.fontFamily}
+                nameAlign={countryStyle.nameAlign}
+                sectionStyle={countryStyle.sectionStyle}
                 isCoverLetter={false}
               />
               <DocumentPanel
@@ -761,6 +766,8 @@ export function GenerateClient({
                 generatedLang={form.outputLanguage}
                 accentColor={countryStyle.accentColor}
                 fontFamily={countryStyle.fontFamily}
+                nameAlign={countryStyle.nameAlign}
+                sectionStyle={countryStyle.sectionStyle}
                 isCoverLetter={true}
               />
             </div>
