@@ -5,6 +5,12 @@ import type { NextRequest } from "next/server";
 const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
 const hasValidKey = clerkKey.length > 30 && !clerkKey.includes("dummy");
 
+const ADMIN_SESSION_COOKIE = "hyrefy-admin-session";
+function getAdminSessionValue() {
+  const pw = process.env.ADMIN_PASSWORD || "hyrefy-admin-2024";
+  return btoa(pw);
+}
+
 const isPublicRoute = createRouteMatcher([
   "/",
   "/job-seekers(.*)",
@@ -39,6 +45,14 @@ export function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
   const segments = url.pathname.split("/").filter(Boolean);
   const lastSegment = segments[segments.length - 1] ?? "";
+
+  // ─── Admin dashboard protection ────────────────────────────────────────────
+  if (url.pathname.startsWith("/admin/dashboard")) {
+    const session = request.cookies.get(ADMIN_SESSION_COOKIE);
+    if (session?.value !== getAdminSessionValue()) {
+      return NextResponse.redirect(new URL("/admin/login", request.url));
+    }
+  }
 
   // ─── User-specific URL rewrite ─────────────────────────────────────────────
   // /dashboard/user_abc123 → serve /dashboard (browser URL stays)

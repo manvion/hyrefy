@@ -1,6 +1,5 @@
 export const dynamic = "force-dynamic";
 
-import { requireAdmin } from "@/lib/admin-auth";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,7 +13,6 @@ export default async function AdminDashboardPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  await requireAdmin();
   const { tab } = await searchParams;
   const activeTab = tab === "employers" ? "employers" : tab === "reports" ? "reports" : "job-seekers";
 
