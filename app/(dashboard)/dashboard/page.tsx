@@ -11,7 +11,7 @@ import {
   Upload, Sparkles, History, FileText, TrendingUp, Clock,
   ArrowRight, CheckCircle2, Target, Download, ChevronRight,
   BarChart3, Briefcase, Globe, Crown, Zap, PenSquare,
-  FileSearch, BrainCircuit,
+  FileSearch, BrainCircuit, AlertTriangle,
 } from "lucide-react";
 import { SUPPORTED_COUNTRIES } from "@/lib/ai/countries";
 
@@ -41,6 +41,7 @@ export default async function DashboardPage() {
   let scansUsed = 0;
   let scansLimit = 2;
   let buildsUsed = 0;
+  let currentPeriodEnd: Date | null = null;
 
   try {
     const user = await db.user.upsert({
@@ -58,6 +59,7 @@ export default async function DashboardPage() {
     scansUsed = user.subscription?.scansUsed ?? 0;
     scansLimit = isPremium ? 9999 : 2;
     buildsUsed = (user.subscription as any)?.buildsUsed ?? 0;
+    currentPeriodEnd = (user.subscription as any)?.currentPeriodEnd ?? null;
 
     const cutoff = sixMonthsAgo();
     const [resume, scans, count] = await Promise.all([
@@ -87,8 +89,45 @@ export default async function DashboardPage() {
 
   const scansRemaining = Math.max(0, scansLimit - scansUsed);
 
+  // Renewal alert logic
+  const daysUntilRenewal = currentPeriodEnd
+    ? Math.ceil((currentPeriodEnd.getTime() - Date.now()) / 86400000)
+    : null;
+  const showRenewalAlert = isPremium && daysUntilRenewal !== null && daysUntilRenewal <= 7;
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
+
+      {/* Renewal alert banner */}
+      {showRenewalAlert && (
+        <div className={`rounded-xl border p-4 flex items-center justify-between gap-3 ${
+          daysUntilRenewal! <= 0
+            ? "border-destructive/30 bg-destructive/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}>
+          <div className="flex items-center gap-3">
+            <AlertTriangle className={`h-5 w-5 shrink-0 ${daysUntilRenewal! <= 0 ? "text-destructive" : "text-amber-500"}`} />
+            <div>
+              <p className={`text-sm font-semibold ${daysUntilRenewal! <= 0 ? "text-destructive" : "text-amber-500"}`}>
+                {daysUntilRenewal! <= 0
+                  ? "Your Premium subscription has expired"
+                  : `Premium renews in ${daysUntilRenewal} day${daysUntilRenewal === 1 ? "" : "s"}`}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {daysUntilRenewal! <= 0
+                  ? "Renew to restore unlimited access"
+                  : `Renews on ${currentPeriodEnd!.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric" })}`}
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/billing"
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors"
+          >
+            {daysUntilRenewal! <= 0 ? "Renew" : "Manage"}
+          </Link>
+        </div>
+      )}
 
       {/* Master Resume Status */}
       <Card className={`border ${hasMasterResume ? "border-emerald-500/25 bg-emerald-500/5" : "border-primary/25 bg-primary/5"}`}>

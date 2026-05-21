@@ -1,6 +1,7 @@
 import { TopNav } from "@/components/dashboard/top-nav";
 import { getAuthUserId } from "@/lib/utils/auth";
 import { db } from "@/lib/db";
+import { redirect } from "next/navigation";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const userId = (await getAuthUserId()) ?? "demo_user";
@@ -12,6 +13,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
         where: { clerkId: userId },
         include: { subscription: true },
       });
+      if ((user as any)?.isBlocked) {
+        redirect("/sign-in?blocked=1");
+      }
       isPremium = user?.subscription?.status === "PREMIUM";
     } catch { /* DB not configured */ }
   }

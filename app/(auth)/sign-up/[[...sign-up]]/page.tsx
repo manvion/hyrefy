@@ -66,7 +66,7 @@ function DemoSignUp() {
   );
 }
 
-function ClerkSignUp() {
+function ClerkSignUp({ redirectUrl }: { redirectUrl: string }) {
   return (
     <div className="min-h-screen bg-[#F3F2EF] dark:bg-background flex flex-col">
       <nav className="flex items-center justify-between px-6 py-4 max-w-6xl mx-auto w-full">
@@ -83,9 +83,15 @@ function ClerkSignUp() {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
+        {redirectUrl === "/billing?checkout=1" && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center max-w-sm w-full">
+            <p className="text-sm font-semibold text-amber-400">Premium Plan Selected</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Create your account, then complete payment to unlock all features.</p>
+          </div>
+        )}
         <SignUp
           appearance={clerkAppearance}
-          forceRedirectUrl="/dashboard"
+          forceRedirectUrl={redirectUrl}
           signInUrl="/sign-in"
         />
       </div>
@@ -93,7 +99,13 @@ function ClerkSignUp() {
   );
 }
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  const { plan } = await searchParams;
+  const redirectUrl = plan === "premium" ? "/billing?checkout=1" : "/dashboard";
   if (isDemoMode) return <DemoSignUp />;
-  return <ClerkSignUp />;
+  return <ClerkSignUp redirectUrl={redirectUrl} />;
 }

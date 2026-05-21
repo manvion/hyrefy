@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Check, Zap, CreditCard, ExternalLink, Loader2, CheckCircle, X, ShieldCheck, Lock } from "lucide-react";
+import { Check, Zap, CreditCard, ExternalLink, Loader2, CheckCircle, X, ShieldCheck, Lock, AlertTriangle, Calendar, Clock } from "lucide-react";
 import { toast } from "@/components/ui/toaster";
 import type { CountryPrice } from "@/lib/utils/pricing";
 
@@ -129,22 +129,37 @@ function CheckoutModal({ onClose }: { onClose: () => void }) {
 export default function BillingPage() {
   const searchParams = useSearchParams();
   const success = searchParams.get("success");
+  const autoCheckout = searchParams.get("checkout") === "1";
   const [showCheckout, setShowCheckout] = useState(false);
   const [portalLoading, setPortalLoading] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [pricing, setPricing] = useState<CountryPrice | null>(null);
 
   useEffect(() => {
-    fetch("/api/user/subscription").then((r) => r.json()).then(setSubscription).catch(() => {});
+    fetch("/api/user/subscription").then((r) => r.json()).then((sub) => {
+      setSubscription(sub);
+      if (autoCheckout && sub?.status !== "PREMIUM") {
+        setShowCheckout(true);
+      }
+    }).catch(() => {});
     fetch("/api/user/geo").then((r) => r.json()).then((d) => setPricing(d.pricing)).catch(() => {});
     if (success) {
       toast({ title: "Welcome to Premium!", description: "Your subscription is now active.", variant: "success" });
     }
-  }, [success]);
+  }, [success, autoCheckout]);
 
   const isPremium = subscription?.status === "PREMIUM";
   const displayPrice = pricing?.displayAmount ?? "$19";
   const displayLabel = pricing?.label ?? "USD";
+
+  // Days remaining calculation
+  const daysRemaining = (() => {
+    if (!subscription?.currentPeriodEnd) return null;
+    const diff = new Date(subscription.currentPeriodEnd).getTime() - Date.now();
+    return Math.ceil(diff / 86400000);
+  })();
+  const isExpiringSoon = daysRemaining !== null && daysRemaining <= 7 && daysRemaining > 0;
+  const isExpired = daysRemaining !== null && daysRemaining <= 0;
 
   const handlePortal = async () => {
     setPortalLoading(true);
@@ -182,6 +197,38 @@ export default function BillingPage() {
           </motion.div>
         )}
 
+        {/* Renewal alert */}
+        {isPremium && (isExpiringSoon || isExpired) && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`rounded-xl border p-4 flex items-start gap-3 ${
+              isExpired
+                ? "border-destructive/30 bg-destructive/5"
+                : "border-amber-500/30 bg-amber-500/5"
+            }`}
+          >
+            <AlertTriangle className={`h-5 w-5 shrink-0 mt-0.5 ${isExpired ? "text-destructive" : "text-amber-500"}`} />
+            <div className="flex-1">
+              <p className={`text-sm font-semibold ${isExpired ? "text-destructive" : "text-amber-500"}`}>
+                {isExpired ? "Subscription expired" : `Subscription expires in ${daysRemaining} day${daysRemaining === 1 ? "" : "s"}`}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {isExpired
+                  ? "Renew now to restore access to all Premium features."
+                  : "Renew now to ensure uninterrupted access to all Premium features."}
+              </p>
+            </div>
+            <button
+              onClick={handlePortal}
+              disabled={portalLoading}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Renew"}
+            </button>
+          </motion.div>
+        )}
+
         {/* Current plan */}
         <Card className="border-border/50 bg-card/30">
           <CardHeader>
@@ -203,9 +250,24 @@ export default function BillingPage() {
               </div>
             )}
             {isPremium && subscription?.currentPeriodEnd && (
-              <p className="text-sm text-muted-foreground">
-                Next billing date: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-              </p>
+              <div className="flex items-center gap-3 p-3 rounded-xl border border-border/40 bg-muted/20">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs text-muted-foreground">Next billing date</p>
+                  <p className="text-sm font-medium">
+                    {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" })}
+                  </p>
+                </div>
+                {daysRemaining !== null && (
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    isExpired ? "bg-destructive/10 text-destructive"
+                    : isExpiringSoon ? "bg-amber-500/10 text-amber-500"
+                    : "bg-emerald-500/10 text-emerald-400"
+                  }`}>
+                    {isExpired ? "Expired" : `${daysRemaining}d left`}
+                  </span>
+                )}
+              </div>
             )}
             {isPremium && (
               <Button onClick={handlePortal} disabled={portalLoading} variant="outline">
