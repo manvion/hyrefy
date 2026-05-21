@@ -193,7 +193,9 @@ export function AdminUsersPanel() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className="text-sm font-medium truncate">{user.name || user.email}</p>
+                            <p className="text-sm font-medium truncate">
+                              {user.name || user.email}
+                            </p>
                             {user.isBlocked && (
                               <Badge variant="destructive" className="text-[10px] shrink-0">BLOCKED</Badge>
                             )}

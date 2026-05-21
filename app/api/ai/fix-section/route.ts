@@ -6,14 +6,14 @@ export const runtime = "nodejs";
 export const maxDuration = 30;
 
 const SECTION_PROMPTS: Record<string, string> = {
-  contact: "Fix and format the contact information. Ensure name, email, phone, LinkedIn, and location are properly structured.",
-  summary: "Improve this professional summary. Make it concise (3-4 sentences), impactful, and achievement-focused. Use strong action words. Remove clichés.",
-  experience: "Improve these work experience bullet points. Start each bullet with a strong action verb. Add quantifiable metrics where plausible (e.g., 'increased by X%', 'managed team of N'). Remove weak phrasing.",
-  education: "Format and improve the education section. Include degree, institution, graduation year, and any notable achievements or GPA if relevant.",
-  skills: "Organize and improve this skills section. Group related skills together. Remove outdated technologies. Ensure skills are ATS-friendly.",
-  projects: "Improve these project descriptions. Add technologies used, your role, and the impact or outcome of each project.",
-  certifications: "Format the certifications section with certification name, issuing organization, and year.",
-  languages: "Format the languages section with proficiency level (Native, Fluent, Conversational, Basic) for each language.",
+  contact: `Clean up and format the contact information. Fix spacing and punctuation only. Do NOT add, remove, or change any actual details (name, email, phone, LinkedIn, location).`,
+  summary: `Rewrite this professional summary to be more concise and impactful (3–4 sentences). Use stronger action verbs and clearer language. Only use facts already stated — do NOT add achievements, roles, or skills not mentioned in the original.`,
+  experience: `Improve the writing quality of these bullet points. Start each bullet with a strong action verb. Improve clarity and grammar. Do NOT invent numbers, metrics, team sizes, percentages, or outcomes not already in the text. Only rewrite what is there.`,
+  education: `Format and improve the education entries. Fix grammar and punctuation. Do NOT add GPA, honors, or details not already present.`,
+  skills: `Organize and clean up the skills list. Group related skills. Fix typos. Do NOT add any skills not already listed.`,
+  projects: `Improve the writing quality of these project descriptions. Make the language clearer and more concise. Do NOT add technologies, outcomes, or details not already present.`,
+  certifications: `Format the certifications cleanly with name, issuer, and year. Only use what is already provided — do NOT add or invent details.`,
+  languages: `Format the languages section. If proficiency levels are missing, you may suggest standard levels (Native, Fluent, Conversational, Basic) only if the language is already listed.`,
 };
 
 export async function POST(req: NextRequest) {
@@ -22,18 +22,18 @@ export async function POST(req: NextRequest) {
 
   const { section, content, language = "en" } = await req.json();
 
-  if (!section || !content) {
+  if (!section || !content?.trim()) {
     return NextResponse.json({ error: "section and content required" }, { status: 400 });
   }
 
-  const instruction = SECTION_PROMPTS[section] || "Improve this resume section. Make it professional, concise, and impactful.";
+  const instruction = SECTION_PROMPTS[section] || "Improve the writing quality only. Do NOT add any information not already present in the original text.";
   const langNote = language === "fr" ? " Write the output in French (Canada)." : " Write the output in English.";
 
   const prompt = `${instruction}${langNote}
 
-Return ONLY the improved content with no explanations, no headers, no markdown — just the plain text exactly as it should appear in the resume.
+CRITICAL: Return ONLY the improved version of the text below — no explanations, no preamble, no markdown, no headings. The output must contain only the same information as the input, rewritten more clearly.
 
-CURRENT CONTENT:
+ORIGINAL TEXT:
 ${content}`;
 
   try {

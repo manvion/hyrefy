@@ -59,6 +59,8 @@ export async function GET() {
       interviewPrepsLimit: isPremium ? 9999 : 1,
       isPremium,
       status: sub.status,
+      currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
+      hasStripeCustomer: !!sub.stripeCustomerId,
     });
   } catch {
     return NextResponse.json({

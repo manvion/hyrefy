@@ -9,6 +9,7 @@ import { AdminLogout } from "@/components/admin/admin-logout";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { AdminUsersPanel } from "@/components/admin/admin-users-panel";
 import { AdminEmailPanel } from "@/components/admin/admin-email-panel";
+import { AdminReportsPanel } from "@/components/admin/admin-reports-panel";
 
 export default async function AdminDashboardPage({
   searchParams,
@@ -35,7 +36,7 @@ export default async function AdminDashboardPage({
     recentWaitlist: [] as { email: string; company: string | null; createdAt: Date }[],
   };
 
-  let reports: { id: string; type: string; title: string; description: string; contactPhone: string | null; userName: string | null; userEmail: string | null; status: string; createdAt: Date }[] = [];
+  let reports: { id: string; type: string; title: string; description: string; contactPhone: string | null; userName: string | null; userEmail: string | null; status: string; adminNote: string | null; createdAt: Date }[] = [];
 
   try {
     const [totalUsers, premiumSubs, blockedCount, scansCount] = await Promise.all([
@@ -342,60 +343,16 @@ export default async function AdminDashboardPage({
         {activeTab === "reports" && (
           <>
             <div>
-              <h1 className="text-xl font-bold">User Reports</h1>
-              <p className="text-muted-foreground text-sm mt-0.5">Issues and feedback submitted by users</p>
+              <h1 className="text-xl font-bold">User Reports & Issues</h1>
+              <p className="text-muted-foreground text-sm mt-0.5">User-submitted feedback, admin-tracked issues, and status management</p>
             </div>
-
-            {reports.length > 0 ? (
-              <div className="space-y-3">
-                {reports.map((report) => {
-                  const typeColors: Record<string, string> = {
-                    bug:         "text-red-400 bg-red-500/10 border-red-500/20",
-                    feature:     "text-amber-400 bg-amber-500/10 border-amber-500/20",
-                    performance: "text-blue-400 bg-blue-500/10 border-blue-500/20",
-                    ux:          "text-purple-400 bg-purple-500/10 border-purple-500/20",
-                    other:       "text-muted-foreground bg-muted/30 border-border/40",
-                  };
-                  const typeNames: Record<string, string> = {
-                    bug: "Bug", feature: "Feature", performance: "Performance", ux: "UI/UX", other: "Other",
-                  };
-                  return (
-                    <Card key={report.id} className={`border-border/50 bg-card/30 ${report.status === "new" ? "border-l-4 border-l-red-400" : ""}`}>
-                      <CardContent className="p-5">
-                        <div className="flex items-start justify-between gap-4 mb-3 flex-wrap">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${typeColors[report.type] ?? typeColors.other}`}>
-                              {typeNames[report.type] ?? report.type}
-                            </span>
-                            <h3 className="text-sm font-semibold text-foreground">{report.title}</h3>
-                            {report.status === "new" && (
-                              <Badge variant="destructive" className="text-[10px]">NEW</Badge>
-                            )}
-                          </div>
-                          <span className="text-xs text-muted-foreground whitespace-nowrap flex items-center gap-1 shrink-0">
-                            <Clock className="h-3 w-3" />
-                            {new Date(report.createdAt).toLocaleDateString("en-CA", { month: "short", day: "numeric", year: "numeric" })}
-                          </span>
-                        </div>
-                        <p className="text-sm text-foreground/80 whitespace-pre-wrap leading-relaxed mb-3">{report.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground border-t border-border/20 pt-3 flex-wrap">
-                          {report.userName && <span><strong>Name:</strong> {report.userName}</span>}
-                          {report.userEmail && <span><strong>Email:</strong> {report.userEmail}</span>}
-                          {report.contactPhone && <span><strong>Phone:</strong> {report.contactPhone}</span>}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            ) : (
-              <Card className="border-border/50 bg-card/30">
-                <CardContent className="py-14 text-center">
-                  <Flag className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground">No reports yet.</p>
-                </CardContent>
-              </Card>
-            )}
+            <AdminReportsPanel
+              initialReports={reports.map(r => ({
+                ...r,
+                adminNote: r.adminNote ?? null,
+                createdAt: r.createdAt.toISOString(),
+              }))}
+            />
           </>
         )}
       </main>

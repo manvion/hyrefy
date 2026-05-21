@@ -37,6 +37,7 @@ interface SubscriptionData {
   scansUsed: number;
   scansLimit: number;
   currentPeriodEnd?: string;
+  hasStripeCustomer?: boolean;
 }
 
 function CheckoutModal({ onClose }: { onClose: () => void }) {
@@ -269,11 +270,27 @@ export default function BillingPage() {
                 )}
               </div>
             )}
-            {isPremium && (
-              <Button onClick={handlePortal} disabled={portalLoading} variant="outline">
-                {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
-                Manage Subscription
-              </Button>
+            {isPremium && subscription?.hasStripeCustomer && (
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={handlePortal} disabled={portalLoading} variant="outline">
+                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                  Manage Subscription
+                </Button>
+                <Button onClick={handlePortal} disabled={portalLoading} variant="outline" className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
+                  Cancel Plan
+                </Button>
+              </div>
+            )}
+            {isPremium && !subscription?.hasStripeCustomer && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
+                <p className="text-xs font-semibold text-amber-400 mb-0.5">Admin-granted access</p>
+                <p className="text-xs text-muted-foreground mb-3">Your premium access was granted directly. To continue after it expires, start a paid subscription.</p>
+                <Button onClick={() => setShowCheckout(true)} variant="gradient" size="sm">
+                  <CreditCard className="mr-2 h-3.5 w-3.5" />
+                  Start Paid Subscription
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
