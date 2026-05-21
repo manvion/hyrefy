@@ -39,18 +39,19 @@ export default async function AdminDashboardPage({
   let reports: { id: string; type: string; title: string; description: string; contactPhone: string | null; userName: string | null; userEmail: string | null; status: string; adminNote: string | null; createdAt: Date }[] = [];
 
   try {
-    const [totalUsers, premiumSubs, blockedCount, scansCount] = await Promise.all([
+    const [totalUsers, premiumSubs, blockedCount, scansCount, payingCount] = await Promise.all([
       db.user.count(),
       db.subscription.count({ where: { status: "PREMIUM" } }),
       db.user.count({ where: { isBlocked: true } }),
       db.resumeScan.count(),
+      db.subscription.count({ where: { status: "PREMIUM", stripeSubscriptionId: { not: null } } }),
     ]);
     overviewStats = {
       totalUsers,
       premiumUsers: premiumSubs,
       blockedUsers: blockedCount,
       totalScans: scansCount,
-      totalRevenue: premiumSubs * 19,
+      totalRevenue: payingCount * 19,
     };
   } catch (e) {
     console.error("[admin] overview stats error:", e);

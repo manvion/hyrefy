@@ -19,7 +19,8 @@ export async function POST(req: NextRequest) {
 
     if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
-    if (user.subscription?.status === "PREMIUM") {
+    // Block only users with an active Stripe subscription; admin-trial users (no stripeSubscriptionId) can upgrade
+    if (user.subscription?.status === "PREMIUM" && user.subscription?.stripeSubscriptionId) {
       return NextResponse.json({ error: "Already subscribed" }, { status: 400 });
     }
 

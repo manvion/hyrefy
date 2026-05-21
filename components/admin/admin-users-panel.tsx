@@ -43,6 +43,7 @@ type FilterType = "all" | "premium" | "free" | "blocked";
 
 export function AdminUsersPanel() {
   const [data, setData] = useState<UsersResponse | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
@@ -57,15 +58,19 @@ export function AdminUsersPanel() {
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
+    setFetchError(null);
     try {
       const params = new URLSearchParams({
         search, filter, page: String(page),
       });
       const res = await fetch(`/api/admin/users?${params}`);
       const json = await res.json();
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setData(json);
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("[admin users]", err);
+      setData(null);
+      setFetchError(err instanceof Error ? err.message : "Failed to load users");
     } finally {
       setLoading(false);
     }
@@ -166,6 +171,10 @@ export function AdminUsersPanel() {
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
               <RefreshCw className="h-4 w-4 animate-spin mr-2" /> Loading users...
             </div>
+          ) : fetchError ? (
+            <div className="text-center py-16 text-sm text-destructive">
+              Error: {fetchError}
+            </div>
           ) : !data?.users.length ? (
             <div className="text-center py-16 text-sm text-muted-foreground">
               No users found{filter !== "all" ? ` for filter "${filter}"` : ""}.
@@ -194,7 +203,7 @@ export function AdminUsersPanel() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm font-medium truncate">
-                              {user.name || user.email}
+                              {user.name || "(no name)"}
                             </p>
                             {user.isBlocked && (
                               <Badge variant="destructive" className="text-[10px] shrink-0">BLOCKED</Badge>
@@ -203,9 +212,7 @@ export function AdminUsersPanel() {
                               <Badge variant="success" className="text-[10px] shrink-0">PREMIUM</Badge>
                             )}
                           </div>
-                          {user.name && (
-                            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                          )}
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                           <div className="flex items-center gap-3 mt-1 text-[11px] text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
                               <FileText className="h-3 w-3" /> {user._count.resumes} resumes
