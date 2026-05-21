@@ -61,6 +61,7 @@ export async function GET() {
       status: sub.status,
       currentPeriodEnd: sub.currentPeriodEnd?.toISOString() ?? null,
       hasStripeCustomer: !!sub.stripeCustomerId,
+      stripeSubscriptionId: sub.stripeSubscriptionId ?? null,
     });
   } catch {
     return NextResponse.json({
