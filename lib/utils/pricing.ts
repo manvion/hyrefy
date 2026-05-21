@@ -6,21 +6,23 @@ export interface CountryPrice {
   currency: string;
   symbol: string;
   displayAmount: string;
-  displayYearlyPerMonth: string;  // "9.50" for US (shown as "/mo when billed yearly")
-  displayYearlyTotal: string;     // "$114" for US (shown as billed annually)
+  displayYearlyPerMonth: string;  // per-month equivalent when billed yearly
+  displayYearlyTotal: string;     // total billed annually
+  /** First-month discounted amount (half of monthly, whole number) */
+  displayFirstMonth: string;
   label: string;
 }
 
 export const COUNTRY_PRICING: Record<string, CountryPrice> = {
-  US: { amount: 1900, yearlyAmount: 11400, currency: "usd", symbol: "$",  displayAmount: "$19",      displayYearlyPerMonth: "9.50",  displayYearlyTotal: "$114",    label: "USD" },
-  CA: { amount: 2500, yearlyAmount: 15000, currency: "cad", symbol: "$",  displayAmount: "CA$25",    displayYearlyPerMonth: "12.50", displayYearlyTotal: "CA$150",  label: "CAD" },
-  GB: { amount: 1500, yearlyAmount:  9000, currency: "gbp", symbol: "£",  displayAmount: "£15",      displayYearlyPerMonth: "7.50",  displayYearlyTotal: "£90",     label: "GBP" },
-  AU: { amount: 2800, yearlyAmount: 16800, currency: "aud", symbol: "$",  displayAmount: "A$28",     displayYearlyPerMonth: "14.00", displayYearlyTotal: "A$168",   label: "AUD" },
-  NZ: { amount: 2900, yearlyAmount: 17400, currency: "nzd", symbol: "$",  displayAmount: "NZ$29",    displayYearlyPerMonth: "14.50", displayYearlyTotal: "NZ$174",  label: "NZD" },
-  IN: { amount: 99900, yearlyAmount: 599400, currency: "inr", symbol: "₹", displayAmount: "₹999",  displayYearlyPerMonth: "499.50",displayYearlyTotal: "₹5,994",  label: "INR" },
-  FR: { amount: 1800, yearlyAmount: 10800, currency: "eur", symbol: "€",  displayAmount: "€18",      displayYearlyPerMonth: "9.00",  displayYearlyTotal: "€108",    label: "EUR" },
-  BE: { amount: 1800, yearlyAmount: 10800, currency: "eur", symbol: "€",  displayAmount: "€18",      displayYearlyPerMonth: "9.00",  displayYearlyTotal: "€108",    label: "EUR" },
-  CH: { amount: 1900, yearlyAmount: 11400, currency: "chf", symbol: "Fr", displayAmount: "CHF 19",   displayYearlyPerMonth: "9.50",  displayYearlyTotal: "CHF 114", label: "CHF" },
+  US: { amount: 2000, yearlyAmount: 12000, currency: "usd", symbol: "$",   displayAmount: "$20",      displayFirstMonth: "$10",  displayYearlyPerMonth: "10",  displayYearlyTotal: "$120",    label: "USD" },
+  CA: { amount: 2600, yearlyAmount: 15600, currency: "cad", symbol: "CA$", displayAmount: "CA$26",    displayFirstMonth: "CA$13",displayYearlyPerMonth: "13",  displayYearlyTotal: "CA$156",  label: "CAD" },
+  GB: { amount: 1600, yearlyAmount:  9600, currency: "gbp", symbol: "£",   displayAmount: "£16",      displayFirstMonth: "£8",   displayYearlyPerMonth: "8",   displayYearlyTotal: "£96",     label: "GBP" },
+  AU: { amount: 2800, yearlyAmount: 16800, currency: "aud", symbol: "A$",  displayAmount: "A$28",     displayFirstMonth: "A$14", displayYearlyPerMonth: "14",  displayYearlyTotal: "A$168",   label: "AUD" },
+  NZ: { amount: 3000, yearlyAmount: 18000, currency: "nzd", symbol: "NZ$", displayAmount: "NZ$30",    displayFirstMonth: "NZ$15",displayYearlyPerMonth: "15",  displayYearlyTotal: "NZ$180",  label: "NZD" },
+  IN: { amount: 100000, yearlyAmount: 600000, currency: "inr", symbol: "₹", displayAmount: "₹1,000",  displayFirstMonth: "₹500", displayYearlyPerMonth: "500", displayYearlyTotal: "₹6,000",  label: "INR" },
+  FR: { amount: 1800, yearlyAmount: 10800, currency: "eur", symbol: "€",   displayAmount: "€18",      displayFirstMonth: "€9",   displayYearlyPerMonth: "9",   displayYearlyTotal: "€108",    label: "EUR" },
+  BE: { amount: 1800, yearlyAmount: 10800, currency: "eur", symbol: "€",   displayAmount: "€18",      displayFirstMonth: "€9",   displayYearlyPerMonth: "9",   displayYearlyTotal: "€108",    label: "EUR" },
+  CH: { amount: 2000, yearlyAmount: 12000, currency: "chf", symbol: "Fr",  displayAmount: "CHF 20",   displayFirstMonth: "Fr10", displayYearlyPerMonth: "10",  displayYearlyTotal: "CHF 120", label: "CHF" },
 };
 
 export const DEFAULT_PRICING = COUNTRY_PRICING.US;

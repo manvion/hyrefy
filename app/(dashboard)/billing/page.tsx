@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
   Check, Zap, CreditCard, ExternalLink, Loader2, CheckCircle, X,
-  ShieldCheck, Lock, AlertTriangle, Calendar, Gift,
+  ShieldCheck, Lock, AlertTriangle, Calendar,
 } from "lucide-react";
 import { toast } from "@/components/ui/toaster";
 import type { CountryPrice } from "@/lib/utils/pricing";
@@ -86,12 +86,10 @@ function CheckoutModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const sym = pricing?.symbol ?? "$";
-  const monthlyFull = pricing ? `${sym}${pricing.displayAmount ?? "19"}` : "$19";
-  const firstMonthPrice = pricing ? `${sym}${(pricing.amount / 200).toFixed(2)}` : "half price";
-  const yearlyPerMonth = pricing ? `${sym}${pricing.displayYearlyPerMonth}` : "$9.50";
-  const yearlyTotal = pricing?.displayYearlyTotal ?? "$114";
-  const yearlyFullPerMonth = pricing ? `${sym}${pricing.displayAmount ?? "19"}` : "$19";
+  const monthlyFull = pricing?.displayAmount ?? "$20";
+  const firstMonthPrice = pricing?.displayFirstMonth ?? "$10";
+  const yearlyPerMonth = pricing ? `${pricing.symbol}${pricing.displayYearlyPerMonth}` : "$10";
+  const yearlyTotal = pricing?.displayYearlyTotal ?? "$120";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -133,7 +131,7 @@ function CheckoutModal({
               {/* Monthly */}
               <button
                 onClick={() => startCheckout("monthly")}
-                className="relative rounded-2xl border-2 border-border/50 bg-card/40 p-4 text-left hover:border-primary/40 hover:bg-primary/5 transition-all group"
+                className="relative rounded-2xl border-2 border-border/50 bg-card/40 p-4 text-left hover:border-primary/40 hover:bg-primary/5 transition-all"
               >
                 <p className="text-sm font-semibold text-foreground mb-2">Monthly</p>
                 {isNewUser ? (
@@ -142,9 +140,6 @@ function CheckoutModal({
                     <p className="text-2xl font-bold text-emerald-400">{firstMonthPrice}</p>
                     <p className="text-xs text-muted-foreground">/mo first month</p>
                     <p className="text-xs text-muted-foreground mt-1">then {monthlyFull}/mo</p>
-                    <span className="mt-2 inline-block text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
-                      50% OFF 1ST MONTH
-                    </span>
                   </>
                 ) : (
                   <>
@@ -165,12 +160,9 @@ function CheckoutModal({
                   </span>
                 </div>
                 <p className="text-sm font-semibold text-foreground mb-2">Annual</p>
-                <p className="text-xs text-muted-foreground line-through">{yearlyFullPerMonth}/mo</p>
+                <p className="text-xs text-muted-foreground line-through">{monthlyFull}/mo</p>
                 <p className="text-2xl font-bold text-emerald-400">{yearlyPerMonth}</p>
                 <p className="text-xs text-muted-foreground">/mo · {yearlyTotal} billed yearly</p>
-                <span className="mt-2 inline-block text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
-                  SAVE 50%
-                </span>
               </button>
             </div>
 
@@ -245,11 +237,10 @@ export default function BillingPage() {
   const isNewUser = !subscription?.stripeSubscriptionId && !isPremium;
 
   // Pricing display
-  const sym = pricing?.symbol ?? "$";
-  const monthlyDisplay = pricing?.displayAmount ?? "$19";
-  const yearlyPerMonthDisplay = pricing ? `${sym}${pricing.displayYearlyPerMonth}` : "$9.50";
-  const yearlyTotalDisplay = pricing?.displayYearlyTotal ?? "$114";
-  const firstMonthDisplay = pricing ? `${sym}${(pricing.amount / 200).toFixed(2)}` : "half price";
+  const monthlyDisplay = pricing?.displayAmount ?? "$20";
+  const yearlyPerMonthDisplay = pricing ? `${pricing.symbol}${pricing.displayYearlyPerMonth}` : "$10";
+  const yearlyTotalDisplay = pricing?.displayYearlyTotal ?? "$120";
+  const firstMonthDisplay = pricing?.displayFirstMonth ?? "$10";
 
   // Days remaining
   const daysRemaining = (() => {
@@ -280,6 +271,13 @@ export default function BillingPage() {
 
   return (
     <>
+      {/* Portal redirect overlay — prevents flash of pricing page while redirecting */}
+      {portalLoading && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="text-sm text-muted-foreground">Opening customer portal…</p>
+        </div>
+      )}
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Billing</h1>
@@ -406,23 +404,6 @@ export default function BillingPage() {
         {/* Upgrade section — only for non-premium users */}
         {!isPremium && (
           <div className="space-y-6">
-            {/* First-month promo banner for new users */}
-            {isNewUser && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 flex items-center gap-3"
-              >
-                <Gift className="h-5 w-5 text-emerald-400 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-400">New user offer: 50% off your first month!</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Automatically applied at checkout on monthly plan. No code needed.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
             {/* Plan cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Free */}
@@ -466,7 +447,7 @@ export default function BillingPage() {
                       {isNewUser && <p className="text-xs line-through text-muted-foreground">{monthlyDisplay}/mo</p>}
                       <p className="text-xl font-bold text-foreground">{isNewUser ? firstMonthDisplay : monthlyDisplay}</p>
                       <p className="text-[10px] text-muted-foreground">{isNewUser ? "1st month" : "/mo"}</p>
-                      {isNewUser && <span className="text-[9px] font-bold text-emerald-400">50% OFF 1ST</span>}
+                      {isNewUser && <p className="text-[9px] text-muted-foreground">then {monthlyDisplay}/mo</p>}
                     </div>
                     <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-3 text-center relative">
                       <div className="absolute -top-2 left-1/2 -translate-x-1/2">
@@ -476,7 +457,6 @@ export default function BillingPage() {
                       <p className="text-xs line-through text-muted-foreground">{monthlyDisplay}/mo</p>
                       <p className="text-xl font-bold text-emerald-400">{yearlyPerMonthDisplay}</p>
                       <p className="text-[10px] text-muted-foreground">/mo · {yearlyTotalDisplay}/yr</p>
-                      <span className="text-[9px] font-bold text-emerald-400">SAVE 50%</span>
                     </div>
                   </div>
 

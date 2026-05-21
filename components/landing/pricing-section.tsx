@@ -8,16 +8,16 @@ import { useLanguage } from "@/components/shared/language-provider";
 import { Check, Zap, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 
-const CURRENCY_MAP: Record<string, { symbol: string; monthly: number; yearly: number; code: string }> = {
-  CA: { symbol: "CA$", monthly: 25, yearly: 150, code: "CAD" },
-  US: { symbol: "$",   monthly: 19, yearly: 114, code: "USD" },
-  GB: { symbol: "£",   monthly: 15, yearly: 90,  code: "GBP" },
-  AU: { symbol: "A$",  monthly: 28, yearly: 168, code: "AUD" },
-  NZ: { symbol: "NZ$", monthly: 29, yearly: 174, code: "NZD" },
-  FR: { symbol: "€",   monthly: 18, yearly: 108, code: "EUR" },
-  BE: { symbol: "€",   monthly: 18, yearly: 108, code: "EUR" },
-  CH: { symbol: "CHF", monthly: 19, yearly: 114, code: "CHF" },
-  IN: { symbol: "₹",   monthly: 999, yearly: 5994, code: "INR" },
+const CURRENCY_MAP: Record<string, { symbol: string; monthly: number; yearly: number; firstMonth: number; code: string }> = {
+  CA: { symbol: "CA$", monthly: 26,    yearly: 156,   firstMonth: 13,  code: "CAD" },
+  US: { symbol: "$",   monthly: 20,    yearly: 120,   firstMonth: 10,  code: "USD" },
+  GB: { symbol: "£",   monthly: 16,    yearly: 96,    firstMonth: 8,   code: "GBP" },
+  AU: { symbol: "A$",  monthly: 28,    yearly: 168,   firstMonth: 14,  code: "AUD" },
+  NZ: { symbol: "NZ$", monthly: 30,    yearly: 180,   firstMonth: 15,  code: "NZD" },
+  FR: { symbol: "€",   monthly: 18,    yearly: 108,   firstMonth: 9,   code: "EUR" },
+  BE: { symbol: "€",   monthly: 18,    yearly: 108,   firstMonth: 9,   code: "EUR" },
+  CH: { symbol: "Fr",  monthly: 20,    yearly: 120,   firstMonth: 10,  code: "CHF" },
+  IN: { symbol: "₹",   monthly: 1000,  yearly: 6000,  firstMonth: 500, code: "INR" },
 };
 
 const DEFAULT_CURRENCY = CURRENCY_MAP.CA;
@@ -48,8 +48,7 @@ export function PricingSection() {
   const { price, countryCode } = useGeoPrice();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
-  const displayPrice = billing === "monthly" ? price.monthly : Math.round(price.yearly / 12);
-  const yearlySavings = Math.round(((price.monthly * 12 - price.yearly) / (price.monthly * 12)) * 100);
+  const displayPrice = billing === "monthly" ? price.firstMonth : Math.round(price.yearly / 12);
 
   return (
     <section id="pricing" className="py-24 relative">
@@ -84,8 +83,7 @@ export function PricingSection() {
               onClick={() => setBilling("yearly")}
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${billing === "yearly" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
-              Yearly
-              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Save 50%</span>
+              Annual
             </button>
           </div>
 
@@ -147,23 +145,23 @@ export function PricingSection() {
               {billing === "yearly" ? (
                 <>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}</span>
+                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}/mo</span>
                     <span className="text-4xl font-bold text-emerald-400">{price.symbol}{displayPrice}</span>
                     <span className="text-muted-foreground">/mo</span>
                   </div>
                   <p className="text-xs text-emerald-400 mb-2 font-semibold">
-                    {price.symbol}{price.yearly} billed annually · Save {yearlySavings}%
+                    {price.symbol}{price.yearly} billed annually
                   </p>
                 </>
               ) : (
                 <>
                   <div className="flex items-baseline gap-2 mb-1">
-                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}</span>
-                    <span className="text-4xl font-bold text-emerald-400">{price.symbol}{Math.round(price.monthly / 2)}</span>
+                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}/mo</span>
+                    <span className="text-4xl font-bold text-emerald-400">{price.symbol}{displayPrice}</span>
                     <span className="text-muted-foreground">/mo</span>
                   </div>
                   <p className="text-xs text-emerald-400 mb-2 font-semibold">
-                    🎁 First month — then {price.symbol}{price.monthly}/mo
+                    First month — then {price.symbol}{price.monthly}/mo
                   </p>
                 </>
               )}
