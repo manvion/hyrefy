@@ -14,6 +14,14 @@ import {
 import Link from "next/link";
 import { cn } from "@/lib/utils/cn";
 import type { ATSScore, JobAnalysis } from "@/types";
+import { GeneratingProgress } from "@/components/ui/generating-progress";
+
+const ANALYZE_STEPS = [
+  { label: "Parsing your resume content", duration: 3000 },
+  { label: "Matching keywords from job description", duration: 5000 },
+  { label: "Scoring ATS compatibility", duration: 4000 },
+  { label: "Generating improvement recommendations", duration: 5000 },
+];
 
 interface ScanResult {
   scanId: string;
@@ -267,16 +275,22 @@ export function AnalyzeClient() {
           size="lg"
           className="w-full"
         >
-          {loading
-            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Analyzing...</>
-            : <><Search className="mr-2 h-4 w-4" />Check ATS Score</>}
+          <Search className="mr-2 h-4 w-4" />Check ATS Score
         </Button>
       </div>
 
       {/* ── Results panel — 3 cols ── */}
       <div className="lg:col-span-3">
         <AnimatePresence mode="wait">
-          {result ? (
+          {loading ? (
+            <GeneratingProgress
+              key="loading"
+              steps={ANALYZE_STEPS}
+              title="Analyzing your resume"
+              subtitle={jobTitle ? `For: ${jobTitle}` : "Checking ATS compatibility"}
+              accentClass="text-cyan-400"
+            />
+          ) : result ? (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 10 }}

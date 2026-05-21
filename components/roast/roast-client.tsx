@@ -6,6 +6,14 @@ import { Flame, Share2, Copy, Check, AlertTriangle, CheckCircle, AlertCircle, Za
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
+import { GeneratingProgress } from "@/components/ui/generating-progress";
+
+const ROAST_STEPS = [
+  { label: "Scanning every line of your resume", duration: 4000 },
+  { label: "Identifying weak verbs & buzzwords", duration: 5000 },
+  { label: "Evaluating structure & formatting", duration: 4000 },
+  { label: "Writing brutal honest feedback", duration: 7000 },
+];
 
 interface RoastIssue {
   category: string;
@@ -102,13 +110,18 @@ export function RoastClient() {
             className="mt-4 w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white"
             size="lg"
           >
-            {loading ? (
-              <><div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />Roasting your resume...</>
-            ) : (
-              <><Flame className="h-4 w-4 mr-2" />Roast My Resume</>
-            )}
+            <Flame className="h-4 w-4 mr-2" />Roast My Resume
           </Button>
         </div>
+      )}
+
+      {loading && (
+        <GeneratingProgress
+          steps={ROAST_STEPS}
+          title="Roasting your resume..."
+          subtitle="No sugarcoating. Brutal honest feedback incoming."
+          accentClass="text-orange-400"
+        />
       )}
 
       {/* Results */}

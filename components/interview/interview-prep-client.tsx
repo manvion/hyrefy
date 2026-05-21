@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
+import { GeneratingProgress } from "@/components/ui/generating-progress";
 
 interface InterviewQuestion {
   question: string;
@@ -36,9 +37,17 @@ interface InterviewPrepClientProps {
   isPremium?: boolean;
   prepsUsed?: number;
   prepsLimit?: number;
+  masterResumeText?: string;
 }
 
-export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLimit = 1 }: InterviewPrepClientProps) {
+const PREP_STEPS = [
+  { label: "Reading your resume & role details", duration: 3000 },
+  { label: "Crafting interview questions", duration: 8000 },
+  { label: "Writing personalized sample answers", duration: 10000 },
+  { label: "Adding pro tips & finalizing", duration: 4000 },
+];
+
+export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLimit = 1, masterResumeText = "" }: InterviewPrepClientProps) {
   const [form, setForm] = useState({
     jobTitle: "",
     company: "",
@@ -63,7 +72,7 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
       const res = await fetch("/api/interview-prep", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, resumeText: masterResumeText || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");
@@ -172,15 +181,22 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
           className="mt-4 w-full"
           size="lg"
         >
-          {loading ? (
-            <><div className="h-4 w-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin mr-2" />Generating Questions...</>
-          ) : atLimit ? (
+          {atLimit ? (
             <><Lock className="h-4 w-4 mr-2" />Monthly Limit Reached</>
           ) : (
             <><Sparkles className="h-4 w-4 mr-2" />Generate Interview Questions</>
           )}
         </Button>
       </div>
+
+      {loading && (
+        <GeneratingProgress
+          steps={PREP_STEPS}
+          title="Generating your interview prep"
+          subtitle={`${form.jobTitle}${form.company ? ` at ${form.company}` : ""}${masterResumeText ? " · Using your resume" : ""}`}
+          accentClass="text-primary"
+        />
+      )}
 
       {/* Results */}
       <AnimatePresence>

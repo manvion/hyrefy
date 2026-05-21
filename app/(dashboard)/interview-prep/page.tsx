@@ -14,6 +14,7 @@ export default async function InterviewPrepPage() {
   let isPremium = false;
   let prepsUsed = 0;
   let prepsLimit = 1;
+  let masterResumeText = "";
 
   if (clerkId) {
     try {
@@ -31,6 +32,13 @@ export default async function InterviewPrepPage() {
             where: { userId: user.id, createdAt: { gte: monthStart } },
           });
         }
+
+        const resume = await db.resume.findFirst({
+          where: { userId: user.id },
+          orderBy: [{ isMaster: "desc" }, { updatedAt: "desc" }],
+          select: { rawText: true },
+        });
+        if (resume?.rawText) masterResumeText = resume.rawText;
       }
     } catch {
       // non-fatal
@@ -47,10 +55,15 @@ export default async function InterviewPrepPage() {
           <h1 className="text-2xl font-bold">AI Interview Prep</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Get 10 personalized interview questions with model answers tailored to your target role.
+          Get 10 personalized interview questions with model answers based on your resume and target role.
         </p>
       </div>
-      <InterviewPrepClient isPremium={isPremium} prepsUsed={prepsUsed} prepsLimit={prepsLimit} />
+      <InterviewPrepClient
+        isPremium={isPremium}
+        prepsUsed={prepsUsed}
+        prepsLimit={prepsLimit}
+        masterResumeText={masterResumeText}
+      />
     </div>
   );
 }
