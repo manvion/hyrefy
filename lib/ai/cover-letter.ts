@@ -12,6 +12,7 @@ export interface CoverLetterInput {
   tone: CoverLetterTone;
   candidateName?: string;
   candidateHeader?: string;
+  targetCountry?: string;
 }
 
 export interface CoverLetterResult {
@@ -26,14 +27,35 @@ const TONE_PROMPTS: Record<CoverLetterTone, string> = {
   concise: "brief, punchy, impact-driven",
 };
 
+function getCountrySalutation(country: string | undefined, isFr: boolean): string {
+  if (isFr || country === "FR" || country === "BE") return "Madame, Monsieur,";
+  if (country === "GB" || country === "CH") return "Dear Sir or Madam,";
+  return "Dear Hiring Manager,";
+}
+
+function getOpeningLine(jobTitle: string, company: string | undefined, country: string | undefined, isFr: boolean): string {
+  const co = company ? ` at ${company}` : "";
+  const coFr = company ? ` chez ${company}` : "";
+  if (isFr || country === "FR" || country === "BE") {
+    return `Je me permets de vous adresser ma candidature pour le poste de ${jobTitle}${coFr}.`;
+  }
+  switch (country) {
+    case "US": return `I am excited to apply for the ${jobTitle} position${co}.`;
+    case "GB": return `I am writing to apply for the position of ${jobTitle}${co}, as advertised.`;
+    case "AU":
+    case "NZ": return `I am writing to express my interest in the ${jobTitle} role${co}.`;
+    default: return `I am pleased to apply for the ${jobTitle} position${co}.`;
+  }
+}
+
 export async function generateCoverLetter(input: CoverLetterInput): Promise<CoverLetterResult> {
-  const { resumeText, jobTitle, jobDescription, companyName, language, tone, candidateHeader } = input;
+  const { resumeText, jobTitle, jobDescription, companyName, language, tone, candidateHeader, targetCountry } = input;
   const isFr = language === "fr";
 
   const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
     year: "numeric", month: "long", day: "numeric",
   });
-  const salutation = isFr ? "Madame, Monsieur," : "Dear Hiring Manager,";
+  const salutation = getCountrySalutation(targetCountry, isFr);
   const closing = isFr ? "Cordialement," : "Sincerely,";
   const recipientLine = companyName ? `Hiring Manager\n${companyName}` : "Hiring Manager";
 
@@ -87,7 +109,8 @@ Output the 3 paragraphs, then HIGHLIGHTS_JSON on its own line.`;
     ? `${candidateHeader}\n\n${today}\n\n${recipientLine}\n\n${salutation}`
     : `${today}\n\n${recipientLine}\n\n${salutation}`;
   const candidateName = candidateHeader ? candidateHeader.split("\n")[0].trim() : "";
-  const coverLetter = `${headerBlock}\n\n${bodyText}\n\n${closing}\n\n${candidateName}`.trim();
+  const openingLine = getOpeningLine(jobTitle, companyName, targetCountry, isFr);
+  const coverLetter = `${headerBlock}\n\n${openingLine}\n\n${bodyText}\n\n${closing}\n\n${candidateName}`.trim();
 
   return { coverLetter, wordCount: coverLetter.split(/\s+/).length, highlights };
 }

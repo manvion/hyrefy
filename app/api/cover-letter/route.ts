@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
       language = "en",
       tone = "professional",
       candidateName,
+      targetCountry,
     } = body as {
       resumeId?: string;
       jobTitle: string;
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
       language: CoverLetterLanguage;
       tone: CoverLetterTone;
       candidateName?: string;
+      targetCountry?: string;
     };
 
     if (!jobTitle || !jobDescription) {
@@ -64,6 +66,7 @@ export async function POST(request: NextRequest) {
       tone,
       candidateName,
       candidateHeader,
+      targetCountry,
     });
 
     const result = {

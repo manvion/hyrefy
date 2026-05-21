@@ -256,16 +256,18 @@ export default function BillingPage() {
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else throw new Error(data.error || "Portal error");
+      if (data.url) {
+        window.location.href = data.url;
+        return; // keep overlay visible until browser navigates away
+      }
+      throw new Error(data.error || "Portal error");
     } catch (err: unknown) {
+      setPortalLoading(false);
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "Failed to open portal",
         variant: "destructive",
       });
-    } finally {
-      setPortalLoading(false);
     }
   };
 

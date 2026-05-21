@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,12 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ coverLetter: string; wordCount: number; highlights: string[] } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [detectedCountry, setDetectedCountry] = useState<string>("CA");
+
+  // Detect user's country for country-specific cover letter formatting
+  useEffect(() => {
+    fetch("/api/geo").then(r => r.json()).then(d => { if (d.country) setDetectedCountry(d.country); }).catch(() => {});
+  }, []);
 
   const generate = async () => {
     if (!jobTitle || !jobDescription) {
@@ -50,7 +56,7 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
       const response = await fetch("/api/cover-letter", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, resumeId, jobTitle, jobDescription, companyName, language: outputLanguage, tone }),
+        body: JSON.stringify({ resumeText, resumeId, jobTitle, jobDescription, companyName, language: outputLanguage, tone, targetCountry: detectedCountry }),
       });
       if (!response.ok) throw new Error("Generation failed");
       const data = await response.json();

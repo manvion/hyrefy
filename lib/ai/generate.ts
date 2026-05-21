@@ -195,6 +195,27 @@ function extractParagraphsOnly(raw: string): string {
   return prose.slice(0, 3).join("\n\n");
 }
 
+function getCountrySalutation(country: CountryCode | undefined, isFr: boolean): string {
+  if (isFr || country === "FR" || country === "BE") return "Madame, Monsieur,";
+  if (country === "GB" || country === "CH") return "Dear Sir or Madam,";
+  return "Dear Hiring Manager,";
+}
+
+function getOpeningLine(jobTitle: string, company: string | undefined, country: CountryCode | undefined, isFr: boolean): string {
+  const co = company ? ` at ${company}` : "";
+  const coFr = company ? ` chez ${company}` : "";
+  if (isFr || country === "FR" || country === "BE") {
+    return `Je me permets de vous adresser ma candidature pour le poste de ${jobTitle}${coFr}.`;
+  }
+  switch (country) {
+    case "US": return `I am excited to apply for the ${jobTitle} position${co}.`;
+    case "GB": return `I am writing to apply for the position of ${jobTitle}${co}, as advertised.`;
+    case "AU":
+    case "NZ": return `I am writing to express my interest in the ${jobTitle} role${co}.`;
+    default: return `I am pleased to apply for the ${jobTitle} position${co}.`;
+  }
+}
+
 export async function generateCoverLetter(params: {
   masterResumeText: string;
   jobTitle: string;
@@ -208,7 +229,7 @@ export async function generateCoverLetter(params: {
   const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
     year: "numeric", month: "long", day: "numeric",
   });
-  const salutation = isFr ? "Madame, Monsieur," : "Dear Hiring Manager,";
+  const salutation = getCountrySalutation(params.targetCountry, isFr);
   const closing = isFr ? "Cordialement," : "Sincerely,";
   const recipientLine = params.company ? `Hiring Manager\n${params.company}` : "Hiring Manager";
 
@@ -223,6 +244,7 @@ export async function generateCoverLetter(params: {
   );
   const raw = await generateText(prompt, { maxTokens: 800, task: "RESUME", temperature: 0.65 });
   const body = extractParagraphsOnly(raw);
+  const openingLine = getOpeningLine(params.jobTitle, params.company, params.targetCountry, isFr);
 
   const headerBlock = params.candidateHeader
     ? `${params.candidateHeader}\n\n${today}\n\n${recipientLine}\n\n${salutation}`
@@ -232,7 +254,7 @@ export async function generateCoverLetter(params: {
     ? params.candidateHeader.split("\n")[0].trim()
     : "";
 
-  return `${headerBlock}\n\n${body}\n\n${closing}\n\n${candidateName}`.trim();
+  return `${headerBlock}\n\n${openingLine}\n\n${body}\n\n${closing}\n\n${candidateName}`.trim();
 }
 
 // ─── Metadata parsing from streamed output ───────────────────────────────────
