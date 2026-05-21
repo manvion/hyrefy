@@ -31,35 +31,39 @@ export function LandingNav() {
       )}
     >
       <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+        <div className="grid h-16 items-center grid-cols-3">
+          {/* Left — logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <HyreLogo size={32} className="group-hover:opacity-90 transition-opacity" />
             <span className="text-lg font-bold tracking-tight">Hyrefy</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-6">
+          {/* Center — nav links */}
+          <div className="hidden md:flex items-center justify-center gap-8">
             <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t.nav.features}</Link>
             <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t.nav.howItWorks}</Link>
             <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">{t.nav.pricing}</Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-2">
-            <ThemeToggle />
-            <LanguageToggle />
-            <Button asChild variant="ghost" size="sm">
-              <Link href="/sign-in">{t.nav.signIn}</Link>
-            </Button>
-            <Button asChild variant="gradient" size="sm">
-              <Link href="/sign-up">{t.nav.getStarted}</Link>
-            </Button>
+          {/* Right — actions */}
+          <div className="flex items-center justify-end gap-2">
+            <div className="hidden md:flex items-center gap-2">
+              <ThemeToggle />
+              <LanguageToggle />
+              <Button asChild variant="ghost" size="sm">
+                <Link href="/sign-in">{t.nav.signIn}</Link>
+              </Button>
+              <Button asChild variant="gradient" size="sm">
+                <Link href="/sign-up">{t.nav.getStarted}</Link>
+              </Button>
+            </div>
+            <button
+              className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+              onClick={() => setMobileOpen(!mobileOpen)}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
-
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-accent transition-colors"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
 
         {mobileOpen && (
