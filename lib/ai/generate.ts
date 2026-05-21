@@ -170,6 +170,19 @@ RULES:
 Output ONLY the 3 paragraphs separated by blank lines. Nothing else.`;
 }
 
+function extractParagraphsOnly(raw: string): string {
+  const segments = raw.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+  const prose = segments.filter(seg => {
+    const lines = seg.split("\n").map(l => l.trim()).filter(Boolean);
+    // Drop all-caps headers (ACTIVITIES, LICENSES, SKILLS, etc.)
+    if (lines.every(l => l === l.toUpperCase() && !l.match(/[.!?,;]/) && l.split(/\s+/).length <= 4)) return false;
+    // Drop very short segments (dates, greetings, one-word lines)
+    if (seg.split(/\s+/).length < 15) return false;
+    return true;
+  });
+  return prose.slice(0, 3).join("\n\n");
+}
+
 export async function generateCoverLetter(params: {
   masterResumeText: string;
   jobTitle: string;
@@ -194,9 +207,9 @@ export async function generateCoverLetter(params: {
     params.outputLanguage,
     params.candidateHeader
   );
-  const body = await generateText(prompt, { maxTokens: 800, task: "RESUME", temperature: 0.65 });
+  const raw = await generateText(prompt, { maxTokens: 800, task: "RESUME", temperature: 0.65 });
+  const body = extractParagraphsOnly(raw);
 
-  // Assemble the full letter with the real header
   const headerBlock = params.candidateHeader
     ? `${params.candidateHeader}\n\n${today}\n\n${recipientLine}\n\n${salutation}`
     : `${today}\n\n${recipientLine}\n\n${salutation}`;
@@ -205,7 +218,7 @@ export async function generateCoverLetter(params: {
     ? params.candidateHeader.split("\n")[0].trim()
     : "";
 
-  return `${headerBlock}\n\n${body.trim()}\n\n${closing}\n\n${candidateName}`.trim();
+  return `${headerBlock}\n\n${body}\n\n${closing}\n\n${candidateName}`.trim();
 }
 
 // ─── Metadata parsing from streamed output ───────────────────────────────────

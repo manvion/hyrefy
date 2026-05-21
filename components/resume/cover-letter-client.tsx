@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,6 +24,7 @@ const TONE_LABELS = {
 };
 
 export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: string; resumeId?: string }) {
+  const router = useRouter();
   const { language: uiLang } = useLanguage();
   const [jobTitle, setJobTitle] = useState("");
   const [jobDescription, setJobDescription] = useState("");
@@ -53,6 +55,7 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
       if (!response.ok) throw new Error("Generation failed");
       const data = await response.json();
       setResult(data);
+      router.refresh();
     } catch {
       toast({ title: "Error", description: "Failed to generate cover letter. Please try again.", variant: "destructive" });
     } finally {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +74,7 @@ function ScoreRing({ score }: { score: number }) {
 const inputCls = "w-full rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 transition";
 
 export function AnalyzeClient() {
+  const router = useRouter();
   const [inputMode, setInputMode] = useState<"master" | "paste">("master");
   const [masterResume, setMasterResume] = useState<MasterResume | null>(null);
   const [pastedText, setPastedText] = useState("");
@@ -140,6 +142,7 @@ export function AnalyzeClient() {
       if (!res.ok) throw new Error(data.error || "Analysis failed");
 
       setResult(data);
+      router.refresh();
       toast({ title: "Analysis complete!", description: `ATS score: ${data.atsScore.overall}/100`, variant: "success" });
     } catch (err) {
       toast({ title: "Analysis failed", description: err instanceof Error ? err.message : "Try again", variant: "destructive" });

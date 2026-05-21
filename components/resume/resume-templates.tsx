@@ -255,9 +255,10 @@ body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 10.5pt; color: #2
 .name { font-size: 26pt; font-weight: 700; color: #0A66C2; letter-spacing: -0.5px; }
 .contact { font-size: 9pt; color: #555; margin-top: 4px; border-bottom: 2.5px solid #0A66C2; padding-bottom: 8px; margin-bottom: 14px; }
 .section-header { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #0A66C2; margin: 16px 0 5px; border-bottom: 1px solid #d0e4f7; padding-bottom: 3px; }
-.bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.5; }
+.bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.55; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #0A66C2; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -268,9 +269,10 @@ body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.5pt; colo
 .name { font-size: 22pt; font-weight: 700; color: #1a1a2e; letter-spacing: 2px; text-transform: uppercase; }
 .contact { font-size: 9pt; color: #444; margin-top: 6px; }
 .section-header { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #1a1a2e; margin: 16px 0 5px; border-left: 4px solid #1a1a2e; padding-left: 8px; }
-.bullet { display: flex; gap: 10px; margin: 2px 0 2px 8px; font-size: 10pt; line-height: 1.55; }
+.bullet { display: flex; gap: 10px; margin: 2px 0 2px 8px; font-size: 10pt; line-height: 1.6; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #1a1a2e; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; text-align: justify; hyphens: auto; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -281,9 +283,10 @@ body { font-family: 'Trebuchet MS', 'Helvetica Neue', sans-serif; font-size: 10.
 .name { font-size: 22pt; font-weight: 700; letter-spacing: -0.3px; }
 .contact { font-size: 9pt; opacity: 0.85; margin-top: 4px; }
 .section-header { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: #0d7377; margin: 16px 0 5px; padding-bottom: 3px; border-bottom: 2px solid #0d7377; }
-.bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.5; }
+.bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.55; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #0d7377; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -294,9 +297,10 @@ body { font-family: 'Arial', sans-serif; font-size: 10pt; color: #1a1a1a; backgr
 .name { font-size: 20pt; font-weight: 700; color: #2d3436; }
 .contact { font-size: 8.5pt; color: #555; text-align: right; line-height: 1.7; }
 .section-header { font-size: 9.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; background: #2d3436; padding: 3px 8px; margin: 16px 0 5px; }
-.bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.5; }
+.bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.55; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #2d3436; flex-shrink: 0; font-weight: bold; }
-.body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; }
+.body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -307,9 +311,10 @@ body { font-family: 'Helvetica Neue', 'Arial', sans-serif; font-size: 10.5pt; co
 .accent { display: inline-block; width: 40px; height: 3px; background: #6c5ce7; margin-bottom: 8px; }
 .contact { font-size: 9pt; color: #777; margin-bottom: 20px; }
 .section-header { font-size: 8.5pt; font-weight: 700; text-transform: uppercase; letter-spacing: 3px; color: #6c5ce7; margin: 18px 0 6px; }
-.bullet { display: flex; gap: 10px; margin: 3px 0; font-size: 10pt; line-height: 1.6; color: #444; }
+.bullet { display: flex; gap: 10px; margin: 3px 0; font-size: 10pt; line-height: 1.65; color: #444; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #6c5ce7; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; text-align: justify; hyphens: auto; }
 .spacer { height: 6px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -321,9 +326,10 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
 .contact { font-size: 9pt; opacity: 0.9; margin-top: 6px; }
 .inner { padding: 20px 40px 36px; }
 .section-header { font-size: 10pt; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #d63031; margin: 16px 0 5px; border-bottom: 2px solid #d63031; padding-bottom: 3px; }
-.bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.5; }
+.bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.55; text-align: justify; }
+.bullet span { flex: 1; }
 .dot { color: #d63031; flex-shrink: 0; font-weight: bold; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
   };
@@ -353,7 +359,7 @@ export function openPrintCoverLetter(text: string, title: string) {
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.75;color:#111;background:#fff}
 .page{max-width:680px;margin:0 auto;padding:52px 56px}
-p{margin-bottom:14pt}
+p{margin-bottom:14pt;text-align:justify;hyphens:auto}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}}
 </style></head><body><div class="page">${paragraphs}</div><script>window.onload=()=>window.print();<\/script></body></html>`;
 

@@ -1,25 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ChevronDown, ChevronUp, BookOpen, Lightbulb, Target, Mic, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import Link from "next/link";
-import { GeneratingProgress } from "@/components/ui/generating-progress";
 
 interface InterviewQuestion {
   question: string;
   type: "behavioral" | "technical" | "situational" | "hr" | "star";
   sampleAnswer: string;
   tips: string[];
-}
-
-interface PrepResult {
-  questions: InterviewQuestion[];
-  overview: string;
-  keyThemes: string[];
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -40,15 +34,8 @@ interface InterviewPrepClientProps {
   masterResumeText?: string;
 }
 
-const PREP_STEPS = [
-  { label: "Reading your resume & job description", duration: 3000 },
-  { label: "Crafting 20 tailored questions", duration: 8000 },
-  { label: "Extracting technical requirements from JD", duration: 6000 },
-  { label: "Writing personalized sample answers", duration: 14000 },
-  { label: "Adding pro tips & finalizing", duration: 5000 },
-];
-
 export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLimit = 1, masterResumeText = "" }: InterviewPrepClientProps) {
+  const router = useRouter();
   const [form, setForm] = useState({
     jobTitle: "",
     company: "",
@@ -56,10 +43,14 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
     industry: "Technology",
     jobDescription: "",
   });
-  const [result, setResult] = useState<PrepResult | null>(null);
+  const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
+  const [overview, setOverview] = useState("");
+  const [keyThemes, setKeyThemes] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
   const [error, setError] = useState("");
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
+  const [done, setDone] = useState(false);
 
   const atLimit = !isPremium && prepsUsed >= prepsLimit;
 
@@ -67,18 +58,61 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
     if (!form.jobTitle) return;
     setLoading(true);
     setError("");
-    setResult(null);
+    setQuestions([]);
+    setOverview("");
+    setKeyThemes([]);
+    setDone(false);
+    setStatusMsg("Connecting to AI...");
+    setExpandedIdx(null);
 
     try {
-      const res = await fetch("/api/interview-prep", {
+      const res = await fetch("/api/interview-prep/stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, resumeText: masterResumeText || undefined }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Generation failed");
-      setResult(data);
-      setExpandedIdx(0);
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error || "Generation failed");
+      }
+
+      const reader = res.body!.getReader();
+      const dec = new TextDecoder();
+      let buf = "";
+      let qCount = 0;
+
+      while (true) {
+        const { done: streamDone, value } = await reader.read();
+        if (streamDone) break;
+
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data:")) continue;
+          try {
+            const event = JSON.parse(t.slice(5).trim()) as { type: string; question?: InterviewQuestion; overview?: string; keyThemes?: string[]; message?: string };
+            if (event.type === "question" && event.question) {
+              qCount++;
+              setStatusMsg(`Generating question ${qCount} of 10...`);
+              setQuestions(prev => [...prev, event.question!]);
+              if (qCount === 1) setExpandedIdx(0);
+            } else if (event.type === "meta") {
+              setOverview(event.overview ?? "");
+              setKeyThemes(event.keyThemes ?? []);
+              setStatusMsg("Done!");
+            } else if (event.type === "error") {
+              throw new Error(event.message ?? "Generation failed");
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+
+      setDone(true);
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
@@ -88,27 +122,19 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Usage banner for free users */}
+      {/* Usage banner */}
       {!isPremium && (
         <div className={cn(
           "flex items-center justify-between gap-3 rounded-xl border px-4 py-3",
-          atLimit
-            ? "border-destructive/30 bg-destructive/5"
-            : "border-amber-500/30 bg-amber-500/5"
+          atLimit ? "border-destructive/30 bg-destructive/5" : "border-amber-500/30 bg-amber-500/5"
         )}>
           <div className="flex items-center gap-2.5">
             {atLimit ? <Lock className="h-4 w-4 text-destructive shrink-0" /> : <Mic className="h-4 w-4 text-amber-500 shrink-0" />}
             <div>
               <p className="text-sm font-medium">
-                {atLimit
-                  ? "Monthly limit reached"
-                  : `${prepsUsed}/${prepsLimit} interview prep used this month`}
+                {atLimit ? "Monthly limit reached" : `${prepsUsed}/${prepsLimit} interview prep used this month`}
               </p>
-              {atLimit && (
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Upgrade to Premium for unlimited access
-                </p>
-              )}
+              {atLimit && <p className="text-xs text-muted-foreground mt-0.5">Upgrade to Premium for unlimited access</p>}
             </div>
           </div>
           {atLimit && (
@@ -185,116 +211,132 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
           {atLimit ? (
             <><Lock className="h-4 w-4 mr-2" />Monthly Limit Reached</>
           ) : (
-            <><Sparkles className="h-4 w-4 mr-2" />Generate Interview Questions</>
+            <><Sparkles className="h-4 w-4 mr-2" />{loading ? statusMsg : "Generate Interview Questions"}</>
           )}
         </Button>
       </div>
 
-      {loading && (
-        <GeneratingProgress
-          steps={PREP_STEPS}
-          title="Generating your interview prep"
-          subtitle={`${form.jobTitle}${form.company ? ` at ${form.company}` : ""}${masterResumeText ? " · Using your resume" : ""}`}
-          accentClass="text-primary"
-        />
-      )}
-
-      {/* Results */}
-      <AnimatePresence>
-        {result && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
-            {/* Overview */}
-            <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5">
+      {/* Streaming questions appear here as they generate */}
+      {(questions.length > 0 || loading) && (
+        <div className="space-y-4">
+          {/* Overview — shows after all questions stream in */}
+          {(overview || keyThemes.length > 0) && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="rounded-2xl border border-primary/20 bg-primary/5 p-5"
+            >
               <div className="flex items-start gap-3">
                 <Mic className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-semibold mb-1">Interview Overview</p>
-                  <p className="text-sm text-muted-foreground">{result.overview}</p>
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {result.keyThemes?.map(theme => (
-                      <Badge key={theme} variant="secondary" className="text-xs">{theme}</Badge>
-                    ))}
-                  </div>
+                  {overview && <p className="text-sm text-muted-foreground">{overview}</p>}
+                  {keyThemes.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {keyThemes.map(theme => (
+                        <Badge key={theme} variant="secondary" className="text-xs">{theme}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
+            </motion.div>
+          )}
 
-            {/* Questions */}
-            <div className="space-y-3">
-              {result.questions.map((q, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  className="rounded-xl border border-border/50 bg-card/30 overflow-hidden"
+          {/* Questions — appear one by one as they stream */}
+          <div className="space-y-3">
+            {questions.map((q, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+                className="rounded-xl border border-border/50 bg-card/30 overflow-hidden"
+              >
+                <button
+                  onClick={() => setExpandedIdx(expandedIdx === i ? null : i)}
+                  className="w-full flex items-start gap-4 p-4 text-left hover:bg-accent/30 transition-colors"
                 >
-                  <button
-                    onClick={() => setExpandedIdx(expandedIdx === i ? null : i)}
-                    className="w-full flex items-start gap-4 p-4 text-left hover:bg-accent/30 transition-colors"
-                  >
-                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">
-                      {i + 1}
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Badge className={cn("text-[10px] border", TYPE_COLORS[q.type] || TYPE_COLORS.hr)}>
+                        {q.type.toUpperCase()}
+                      </Badge>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge className={cn("text-[10px] border", TYPE_COLORS[q.type] || TYPE_COLORS.hr)}>
-                          {q.type.toUpperCase()}
-                        </Badge>
-                      </div>
-                      <p className="text-sm font-medium">{q.question}</p>
-                    </div>
-                    {expandedIdx === i ? (
-                      <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
-                    )}
-                  </button>
+                    <p className="text-sm font-medium">{q.question}</p>
+                  </div>
+                  {expandedIdx === i
+                    ? <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                    : <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />}
+                </button>
 
-                  <AnimatePresence>
-                    {expandedIdx === i && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="px-4 pb-4 pt-0 border-t border-border/30 space-y-4">
-                          <div>
-                            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-emerald-400">
-                              <BookOpen className="h-3.5 w-3.5" />
-                              Sample Answer
-                            </div>
-                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                              {q.sampleAnswer}
-                            </p>
+                <AnimatePresence>
+                  {expandedIdx === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-4 pb-4 pt-0 border-t border-border/30 space-y-4">
+                        <div>
+                          <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-emerald-400">
+                            <BookOpen className="h-3.5 w-3.5" />
+                            Sample Answer
                           </div>
-                          {q.tips?.length > 0 && (
-                            <div>
-                              <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-amber-400">
-                                <Lightbulb className="h-3.5 w-3.5" />
-                                Pro Tips
-                              </div>
-                              <ul className="space-y-1">
-                                {q.tips.map((tip, ti) => (
-                                  <li key={ti} className="text-xs text-muted-foreground flex items-start gap-2">
-                                    <span className="text-primary mt-0.5">•</span>
-                                    {tip}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                          <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                            {q.sampleAnswer}
+                          </p>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+                        {q.tips?.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-1.5 mb-2 text-xs font-semibold text-amber-400">
+                              <Lightbulb className="h-3.5 w-3.5" />
+                              Pro Tips
+                            </div>
+                            <ul className="space-y-1">
+                              {q.tips.map((tip, ti) => (
+                                <li key={ti} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <span className="text-primary mt-0.5">•</span>
+                                  {tip}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+
+            {/* Loading indicator for remaining questions */}
+            {loading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="rounded-xl border border-border/30 bg-card/20 p-4 flex items-center gap-3"
+              >
+                <div className="flex gap-1">
+                  {[0, 1, 2].map(i => (
+                    <motion.div
+                      key={i}
+                      className="w-2 h-2 rounded-full bg-primary"
+                      animate={{ scale: [1, 1.4, 1] }}
+                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                    />
+                  ))}
+                </div>
+                <span className="text-sm text-muted-foreground">{statusMsg}</span>
+              </motion.div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

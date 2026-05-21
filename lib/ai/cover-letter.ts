@@ -65,12 +65,22 @@ Output the 3 paragraphs, then HIGHLIGHTS_JSON on its own line.`;
 
   // Extract highlights JSON if present
   let highlights: string[] = [];
-  let bodyText = text;
+  let rawBody = text;
   const hlMatch = text.match(/HIGHLIGHTS_JSON:\s*(\{[\s\S]*?\})/);
   if (hlMatch) {
     try { highlights = JSON.parse(hlMatch[1]).highlights || []; } catch { /**/ }
-    bodyText = text.slice(0, hlMatch.index).trim();
+    rawBody = text.slice(0, hlMatch.index).trim();
   }
+
+  // Strip any AI-generated resume sections (e.g. ACTIVITIES, LICENSES) from the body
+  const segments = rawBody.split(/\n{2,}/).map(s => s.trim()).filter(Boolean);
+  const proseOnly = segments.filter(seg => {
+    const lines = seg.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.every(l => l === l.toUpperCase() && !l.match(/[.!?,;]/) && l.split(/\s+/).length <= 4)) return false;
+    if (seg.split(/\s+/).length < 15) return false;
+    return true;
+  });
+  const bodyText = proseOnly.slice(0, 3).join("\n\n");
 
   // Assemble full letter
   const headerBlock = candidateHeader
