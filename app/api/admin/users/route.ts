@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { clerkClient } from "@clerk/nextjs/server";
 
 function isAdmin(request: NextRequest): boolean {
   const cookie = request.cookies.get("hyrefy-admin-session");
@@ -37,8 +38,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const dbc = db as any;
-    const [users, total] = await Promise.all([
+    const [dbUsers, total] = await Promise.all([
       db.user.findMany({
         where,
         include: {
@@ -51,6 +51,33 @@ export async function GET(request: NextRequest) {
       }),
       db.user.count({ where }),
     ]);
+
+    // Enrich with real Clerk data so name/email are always accurate
+    const clerk = await clerkClient();
+    const clerkIds = dbUsers.map(u => u.clerkId).filter(Boolean);
+    let clerkMap: Record<string, { name: string | null; email: string }> = {};
+
+    if (clerkIds.length > 0) {
+      try {
+        const clerkUsers = await clerk.users.getUserList({ userId: clerkIds, limit: 100 });
+        for (const cu of clerkUsers.data) {
+          const name = `${cu.firstName || ""} ${cu.lastName || ""}`.trim() || null;
+          const email = cu.emailAddresses[0]?.emailAddress || "";
+          clerkMap[cu.id] = { name, email };
+        }
+      } catch (e) {
+        console.error("[admin/users] Clerk enrich error:", e);
+      }
+    }
+
+    const users = dbUsers.map(u => {
+      const clerk = clerkMap[u.clerkId];
+      return {
+        ...u,
+        name: clerk?.name || u.name || null,
+        email: clerk?.email || u.email || "",
+      };
+    });
 
     return NextResponse.json({
       users,
