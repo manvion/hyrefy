@@ -34,15 +34,15 @@ function buildPrompt(input: InterviewPrepInput, safeResumeText: string, format: 
     : `• Write detailed, realistic sample answers appropriate for the role and level.
 • For technical questions: provide expert-level answers with code snippets or step-by-step explanations where relevant.`;
 
-  const questionMix = `Include EXACTLY this mix of 10 questions:
-- 2 behavioral questions (STAR method) — leadership, conflict, or achievement (type: "behavioral")
-- 3 technical questions — ${jobDescription ? "drawn from specific tools/languages/frameworks in the JD" : "core technical skills for this role"} — test depth not definitions (type: "technical")
-- 2 situational questions with real work scenarios (type: "situational")
-- 2 HR questions — motivation, strengths/weaknesses, culture fit (type: "hr")
-- 1 curveball or strategic thinking question (type: "star")`;
+  const questionMix = `Include EXACTLY this mix of 20 questions:
+- 4 behavioral questions (STAR method) — leadership, conflict, achievement, teamwork (type: "behavioral")
+- 7 technical questions — ${jobDescription ? "drawn from specific tools/languages/frameworks in the JD" : "core technical skills for this role"} — test depth not definitions (type: "technical")
+- 4 situational questions with real work scenarios (type: "situational")
+- 3 HR questions — motivation, strengths/weaknesses, culture fit (type: "hr")
+- 2 curveball or strategic thinking questions (type: "star")`;
 
   if (format === "ndjson") {
-    return `You are an expert interview coach. Generate 10 interview questions for:
+    return `You are an expert interview coach. Generate 20 interview questions for:
 - Job Title: ${jobTitle}
 - Company: ${company || "Not specified"}
 - Level: ${level || "Mid-level"}
@@ -70,7 +70,7 @@ Output ONLY the QUESTION: and META: lines. No other text.`;
 
   return `You are an expert interview coach with 20+ years of experience.
 
-Generate exactly 10 high-quality interview questions for:
+Generate exactly 20 high-quality interview questions for:
 - Job Title: ${jobTitle}
 - Company: ${company || "Not specified"}
 - Level: ${level || "Mid-level"}
@@ -103,7 +103,7 @@ export async function generateInterviewPrep(input: InterviewPrepInput): Promise<
     : { text: "", restore: (s: string) => s };
 
   const prompt = buildPrompt(input, safeResumeText, "json");
-  const text = await generateText(prompt, { maxTokens: 3500 });
+  const text = await generateText(prompt, { maxTokens: 6000 });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Failed to parse interview prep response");
 
@@ -126,7 +126,7 @@ export async function* streamInterviewPrep(input: InterviewPrepInput): AsyncGene
 
   let buffer = "";
   try {
-    for await (const token of streamText(prompt, { maxTokens: 3500 })) {
+    for await (const token of streamText(prompt, { maxTokens: 6000 })) {
       buffer += token;
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
