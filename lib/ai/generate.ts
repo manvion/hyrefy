@@ -20,13 +20,7 @@ const COUNTRY_STANDARDS: Record<CountryCode, string> = {
   FR: "France: CV 1-2 pages, français professionnel, chronologie inversée, compétences linguistiques.",
   BE: "Belgique: CV 1-2 pages, mention des langues FR/NL/EN, formation académique détaillée.",
   CH: "Suisse: CV 1-2 pages, très précis, compétences multilingues, permis de travail si pertinent.",
-  DE: "Germany: Lebenslauf 1-2 pages, education before experience, photo optional, precise and structured.",
   IN: "India: 2-3 pages, education prominent, skills section critical, objective at top for freshers.",
-  AE: "UAE: 1-2 pages, education before experience, include nationality/visa status, formal tone.",
-  SA: "Saudi Arabia: 1-2 pages, education section first, include Islamic greeting, formal professional tone.",
-  SG: "Singapore: 1-2 pages, education before experience, highlight certifications and language skills.",
-  JP: "Japan: Structured resume (rirekisho style), education and work history in chronological order.",
-  ZA: "South Africa: 2-3 pages, references section common, ID number sometimes requested, local spelling.",
 };
 
 export interface GenerateInput {

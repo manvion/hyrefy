@@ -8,28 +8,15 @@ export type CountryStyle = {
 };
 
 export const COUNTRY_STYLES: Record<string, CountryStyle> = {
-  // North America
   US: { accentColor: "#0A66C2", fontFamily: "'Arial', sans-serif",                    nameAlign: "center", sectionStyle: "underline"   },
   CA: { accentColor: "#003087", fontFamily: "'Calibri', 'Arial', sans-serif",         nameAlign: "center", sectionStyle: "underline"   },
-  // UK / Ireland-style
   GB: { accentColor: "#1a1a2e", fontFamily: "'Times New Roman', serif",               nameAlign: "left",   sectionStyle: "left-border" },
-  // Oceania
   AU: { accentColor: "#0d7377", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "underline"   },
   NZ: { accentColor: "#007a5e", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "underline"   },
-  ZA: { accentColor: "#b71c1c", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "left-border" },
-  // Continental Europe (minimal/CV style)
   FR: { accentColor: "#6c5ce7", fontFamily: "'Garamond', 'Georgia', serif",           nameAlign: "center", sectionStyle: "minimal"     },
   BE: { accentColor: "#5a4db0", fontFamily: "'Garamond', 'Georgia', serif",           nameAlign: "center", sectionStyle: "minimal"     },
   CH: { accentColor: "#2d3436", fontFamily: "'Calibri', 'Trebuchet MS', sans-serif",  nameAlign: "left",   sectionStyle: "filled"      },
-  DE: { accentColor: "#1a237e", fontFamily: "'Arial', 'Helvetica', sans-serif",       nameAlign: "left",   sectionStyle: "filled"      },
-  // South Asia
   IN: { accentColor: "#c62828", fontFamily: "'Arial', sans-serif",                    nameAlign: "center", sectionStyle: "underline"   },
-  // Middle East
-  AE: { accentColor: "#00695c", fontFamily: "'Calibri', 'Arial', sans-serif",         nameAlign: "center", sectionStyle: "underline"   },
-  SA: { accentColor: "#1b5e20", fontFamily: "'Calibri', 'Arial', sans-serif",         nameAlign: "center", sectionStyle: "underline"   },
-  // Asia Pacific
-  SG: { accentColor: "#0277bd", fontFamily: "'Arial', sans-serif",                    nameAlign: "left",   sectionStyle: "left-border" },
-  JP: { accentColor: "#37474f", fontFamily: "'Arial', 'Helvetica', sans-serif",       nameAlign: "left",   sectionStyle: "filled"      },
 };
 
 export function ResumePreview({

@@ -100,7 +100,7 @@ function SectionHeader({
 }
 
 // Countries where Education section comes before Work Experience
-const EDU_FIRST_COUNTRIES = new Set(["IN", "FR", "BE", "CH", "DE", "AE", "SA", "PK", "BD", "LK", "NP", "JP", "SG"]);
+const EDU_FIRST_COUNTRIES = new Set(["IN", "FR", "BE", "CH", "DE", "AE", "SA", "PK", "BD", "LK", "NP"]);
 
 function buildResumeText(data: ResumeData, lang: Language, country = "CA"): string {
   const lines: string[] = [];
