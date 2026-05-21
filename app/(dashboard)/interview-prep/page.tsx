@@ -55,7 +55,7 @@ export default async function InterviewPrepPage() {
           <h1 className="text-2xl font-bold">AI Interview Prep</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Get 10 personalized interview questions with model answers based on your resume and target role.
+          Get 20 personalized interview questions — including real technical questions from the job description — with model answers based on your resume.
         </p>
       </div>
       <InterviewPrepClient

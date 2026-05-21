@@ -41,10 +41,11 @@ interface InterviewPrepClientProps {
 }
 
 const PREP_STEPS = [
-  { label: "Reading your resume & role details", duration: 3000 },
-  { label: "Crafting interview questions", duration: 8000 },
-  { label: "Writing personalized sample answers", duration: 10000 },
-  { label: "Adding pro tips & finalizing", duration: 4000 },
+  { label: "Reading your resume & job description", duration: 3000 },
+  { label: "Crafting 20 tailored questions", duration: 8000 },
+  { label: "Extracting technical requirements from JD", duration: 6000 },
+  { label: "Writing personalized sample answers", duration: 14000 },
+  { label: "Adding pro tips & finalizing", duration: 5000 },
 ];
 
 export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLimit = 1, masterResumeText = "" }: InterviewPrepClientProps) {
