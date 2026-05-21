@@ -226,9 +226,29 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="rounded-xl border border-border/40 bg-background/40 p-5">
-                  <pre className="whitespace-pre-wrap text-sm leading-relaxed font-sans text-foreground">
-                    {result.coverLetter}
-                  </pre>
+                  <div className="text-sm font-serif leading-relaxed text-foreground space-y-3">
+                    {result.coverLetter.split(/\n{2,}/).map((para, i) => {
+                      const trimmed = para.trim();
+                      if (!trimmed) return null;
+                      // Short / header blocks (name, date, salutation, closing) — preserve lines, left align
+                      const joined = trimmed.replace(/\n/g, " ");
+                      if (joined.length < 90 || /^(dear|madame|sincerely|cordialement|regards)/i.test(joined)) {
+                        return (
+                          <div key={i} className="space-y-0.5">
+                            {trimmed.split("\n").map((line, j) => (
+                              <p key={j} className="leading-relaxed">{line}</p>
+                            ))}
+                          </div>
+                        );
+                      }
+                      // Body paragraphs — join and justify
+                      return (
+                        <p key={i} className="leading-relaxed" style={{ textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
+                          {joined}
+                        </p>
+                      );
+                    })}
+                  </div>
                 </div>
                 <div className="flex gap-3">
                   <Button onClick={copyToClipboard} variant="outline" className="flex-1">

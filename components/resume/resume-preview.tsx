@@ -39,13 +39,13 @@ export function ResumePreview({
   const getSectionHeaderStyle = (): React.CSSProperties => {
     switch (sectionStyle) {
       case "left-border":
-        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: accentColor, borderLeft: `3px solid ${accentColor}`, paddingLeft: "8px" };
+        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, color: accentColor, borderLeft: `3px solid ${accentColor}`, paddingLeft: "8px" };
       case "minimal":
-        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: accentColor };
+        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: accentColor };
       case "filled":
-        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "#fff", background: accentColor, padding: "2px 8px" };
+        return { fontSize: "9pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#fff", background: accentColor, padding: "2px 8px" };
       default:
-        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: accentColor, borderBottom: `1.5px solid ${accentColor}55`, paddingBottom: "2px" };
+        return { fontSize: "9.5pt", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: accentColor, borderBottom: `1.5px solid ${accentColor}55`, paddingBottom: "2px" };
     }
   };
 
@@ -89,18 +89,16 @@ export function ResumePreview({
           ) {
             return (
               <div key={i} style={{ marginTop: "18px", marginBottom: "6px" }}>
-                <p style={getSectionHeaderStyle()}>
-                  {trimmed}
-                </p>
+                <p style={getSectionHeaderStyle()}>{trimmed}</p>
               </div>
             );
           }
 
           if (trimmed.match(/^[•\-–—*]\s/)) {
             return (
-              <div key={i} style={{ display: "flex", gap: "8px", marginLeft: "8px", margin: "1px 0 1px 8px" }}>
+              <div key={i} style={{ display: "flex", gap: "8px", marginLeft: "8px", margin: "2px 0 2px 8px" }}>
                 <span style={{ color: accentColor, flexShrink: 0, marginTop: "1px" }}>•</span>
-                <p style={{ fontSize: "10.5pt", color: "#374151" }}>
+                <p style={{ fontSize: "10.5pt", color: "#374151", flex: 1, textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
                   {trimmed.replace(/^[•\-–—*]\s/, "")}
                 </p>
               </div>
@@ -116,7 +114,7 @@ export function ResumePreview({
           }
 
           return (
-            <p key={i} style={{ fontSize: "10.5pt", color: "#374151", margin: "1px 0" }}>
+            <p key={i} style={{ fontSize: "10.5pt", color: "#374151", margin: "1px 0", textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
               {trimmed}
             </p>
           );
@@ -124,6 +122,17 @@ export function ResumePreview({
       </div>
     </div>
   );
+}
+
+// ─── Cover letter preview — paragraph-based for proper justification ────────────
+
+function isCoverLetterHeaderBlock(para: string): boolean {
+  const joined = para.replace(/\n/g, " ").trim();
+  // Short text (single line-ish) or looks like a header/salutation/closing
+  if (joined.length < 90) return true;
+  // Salutation lines
+  if (/^(dear|madame|monsieur|cordialement|sincerely|regards)/i.test(joined)) return true;
+  return false;
 }
 
 export function CoverLetterPreview({
@@ -136,6 +145,10 @@ export function CoverLetterPreview({
   fontFamily?: string;
 }) {
   if (!text.trim()) return null;
+
+  // Split into paragraphs on blank lines
+  const paragraphs = text.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+
   return (
     <div
       className="bg-white shadow-xl rounded-sm mx-auto w-full max-w-[700px] min-h-[900px] overflow-hidden"
@@ -143,14 +156,44 @@ export function CoverLetterPreview({
     >
       <div style={{ background: accentColor, height: "5px" }} />
       <div style={{ padding: "44px 52px" }}>
-        <pre
-          style={{
-            whiteSpace: "pre-wrap", fontFamily, fontSize: "11pt",
-            lineHeight: "1.75", color: "#1f2937",
-          }}
-        >
-          {text}
-        </pre>
+        {paragraphs.map((para, i) => {
+          const isHeader = isCoverLetterHeaderBlock(para);
+          const lines = para.split("\n");
+
+          if (isHeader) {
+            // Multi-line header blocks (name + contact, date, recipient, salutation, closing)
+            return (
+              <div key={i} style={{ marginBottom: "14pt" }}>
+                {lines.map((line, j) => (
+                  <p
+                    key={j}
+                    style={{ fontSize: "11pt", lineHeight: "1.65", color: "#1f2937", margin: 0 }}
+                  >
+                    {line}
+                  </p>
+                ))}
+              </div>
+            );
+          }
+
+          // Body paragraph — join internal newlines into one flowing block and justify
+          const bodyText = lines.join(" ");
+          return (
+            <p
+              key={i}
+              style={{
+                fontSize: "11pt",
+                lineHeight: "1.75",
+                color: "#1f2937",
+                marginBottom: "14pt",
+                textAlign: "justify",
+                hyphens: "auto",
+              } as React.CSSProperties}
+            >
+              {bodyText}
+            </p>
+          );
+        })}
       </div>
       <div style={{ background: accentColor, height: "2px", opacity: 0.25 }} />
     </div>
