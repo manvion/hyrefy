@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/utils/auth";
 import { db } from "@/lib/db";
 import { generateCoverLetter, type CoverLetterLanguage, type CoverLetterTone } from "@/lib/ai/cover-letter";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 export async function POST(request: NextRequest) {
   try {
@@ -50,8 +51,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Resume text is required" }, { status: 400 });
     }
 
-    const result = await generateCoverLetter({
-      resumeText,
+    const { text: safeResumeText, restore } = redactPII(resumeText);
+    const rawResult = await generateCoverLetter({
+      resumeText: safeResumeText,
       jobTitle,
       jobDescription,
       companyName,
@@ -59,6 +61,11 @@ export async function POST(request: NextRequest) {
       tone,
       candidateName,
     });
+
+    const result = {
+      ...rawResult,
+      coverLetter: restore(rawResult.coverLetter),
+    };
 
     return NextResponse.json(result);
   } catch (error) {

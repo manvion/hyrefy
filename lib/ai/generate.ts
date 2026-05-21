@@ -130,26 +130,49 @@ export function buildCoverLetterPrompt(
   outputLanguage: OutputLanguage
 ): string {
   const isFr = outputLanguage === "fr";
+  const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
+    year: "numeric", month: "long", day: "numeric",
+  });
 
-  return `Write a professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}.
+  return `Write a complete, properly formatted professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}.
 ${isFr ? "Write in French (Canada)." : "Write in English."}
 
-RESUME HIGHLIGHTS:
+RESUME (extract candidate name and contact from the first 3 lines):
 ${masterResumeText.slice(0, 2500)}
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 1500)}
 
+OUTPUT FORMAT — output the full letter exactly like this, preserving all blank lines:
+
+[Candidate full name from resume line 1]
+[Email from resume] | [Phone from resume]
+[LinkedIn or city/country if present in resume]
+
+${today}
+
+Hiring Manager${company ? `\n${company}` : ""}
+
+${isFr ? "Madame, Monsieur," : "Dear Hiring Manager,"}
+
+[Paragraph 1 — compelling opening specific to this role, not generic]
+
+[Paragraph 2 — strongest real experience mapped to the job's key needs]
+
+[Paragraph 3 — second real experience or key differentiator mapped to the role]
+
+[Paragraph 4 — confident closing with call to action]
+
+${isFr ? "Cordialement," : "Sincerely,"}
+
+[Candidate full name from resume line 1]
+
 RULES:
-• 280-350 words, 4 paragraphs
-• Paragraph 1: compelling opening specific to this role — not generic
-• Paragraphs 2-3: 2 strongest real experiences mapped to the job's key needs
-• Paragraph 4: confident closing with call to action
+• 280-350 words in body paragraphs
 • No "I am writing to apply" openers
 • No AI buzzwords (leverage, spearhead, synergy)
-• Based only on facts in the resume${isFr ? "\n• Formule de politesse appropriée" : ""}
-
-Write ONLY the cover letter text. No JSON, no metadata, no title.`;
+• Use only facts already in the resume — never invent details
+• Preserve all [PLACEHOLDER] tokens exactly as they appear`;
 }
 
 export async function generateCoverLetter(params: {
@@ -166,7 +189,7 @@ export async function generateCoverLetter(params: {
     params.jobDescription,
     params.outputLanguage
   );
-  return generateText(prompt, { maxTokens: 900, task: "RESUME", temperature: 0.65 });
+  return generateText(prompt, { maxTokens: 1200, task: "RESUME", temperature: 0.65 });
 }
 
 // ─── Metadata parsing from streamed output ───────────────────────────────────
