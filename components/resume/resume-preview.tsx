@@ -98,7 +98,7 @@ export function ResumePreview({
             return (
               <div key={i} style={{ display: "flex", gap: "8px", marginLeft: "8px", margin: "2px 0 2px 8px" }}>
                 <span style={{ color: accentColor, flexShrink: 0, marginTop: "1px" }}>•</span>
-                <p style={{ fontSize: "10.5pt", color: "#374151", flex: 1, textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
+                <p style={{ fontSize: "10.5pt", color: "#374151", flex: 1, textAlign: "justify" } as React.CSSProperties}>
                   {trimmed.replace(/^[•\-–—*]\s/, "")}
                 </p>
               </div>
@@ -114,7 +114,7 @@ export function ResumePreview({
           }
 
           return (
-            <p key={i} style={{ fontSize: "10.5pt", color: "#374151", margin: "1px 0", textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
+            <p key={i} style={{ fontSize: "10.5pt", color: "#374151", margin: "1px 0", textAlign: "justify" } as React.CSSProperties}>
               {trimmed}
             </p>
           );

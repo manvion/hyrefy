@@ -243,7 +243,7 @@ export function CoverLetterClient({ resumeText, resumeId }: { resumeText?: strin
                       }
                       // Body paragraphs — join and justify
                       return (
-                        <p key={i} className="leading-relaxed" style={{ textAlign: "justify", hyphens: "auto" } as React.CSSProperties}>
+                        <p key={i} className="leading-relaxed" style={{ textAlign: "justify" } as React.CSSProperties}>
                           {joined}
                         </p>
                       );

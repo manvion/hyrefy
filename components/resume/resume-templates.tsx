@@ -271,7 +271,7 @@ body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 10.5pt; color: #2
 .bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.55; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #0A66C2; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -285,7 +285,7 @@ body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.5pt; colo
 .bullet { display: flex; gap: 10px; margin: 2px 0 2px 8px; font-size: 10pt; line-height: 1.6; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #1a1a2e; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; text-align: justify; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -299,7 +299,7 @@ body { font-family: 'Trebuchet MS', 'Helvetica Neue', sans-serif; font-size: 10.
 .bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.55; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #0d7377; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -313,7 +313,7 @@ body { font-family: 'Arial', sans-serif; font-size: 10pt; color: #1a1a1a; backgr
 .bullet { display: flex; gap: 8px; margin: 2px 0 2px 6px; font-size: 10pt; line-height: 1.55; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #2d3436; flex-shrink: 0; font-weight: bold; }
-.body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; text-align: justify; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -327,7 +327,7 @@ body { font-family: 'Helvetica Neue', 'Arial', sans-serif; font-size: 10.5pt; co
 .bullet { display: flex; gap: 10px; margin: 3px 0; font-size: 10pt; line-height: 1.65; color: #444; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #6c5ce7; flex-shrink: 0; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; text-align: justify; }
 .spacer { height: 6px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
@@ -342,7 +342,7 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
 .bullet { display: flex; gap: 8px; margin: 2px 0 2px 4px; font-size: 10pt; line-height: 1.55; text-align: justify; }
 .bullet span { flex: 1; }
 .dot { color: #d63031; flex-shrink: 0; font-weight: bold; }
-.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; hyphens: auto; }
+.body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; text-align: justify; }
 .spacer { height: 4px; }
 @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
   };
@@ -379,7 +379,7 @@ body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.
 .bar-bot{height:2px;background:${accentColor};opacity:0.25}
 .page{max-width:680px;margin:0 auto;padding:44px 52px}
 p.hdr{margin-bottom:14pt}
-p.body{margin-bottom:14pt;text-align:justify;hyphens:auto}
+p.body{margin-bottom:14pt;text-align:justify}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}}
 </style></head><body><div class="bar-top"></div><div class="page">${paragraphs}</div><div class="bar-bot"></div><script>window.onload=()=>window.print();<\/script></body></html>`;
 
