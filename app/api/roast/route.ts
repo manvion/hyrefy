@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthUserId } from "@/lib/utils/auth";
 import { roastResume } from "@/lib/ai/roast";
 import { db } from "@/lib/db";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 const dbc = db as any;
 
@@ -15,7 +16,10 @@ export async function POST(request: NextRequest) {
   if (!resumeText) return NextResponse.json({ error: "Resume text required" }, { status: 400 });
 
   try {
-    const result = await roastResume(resumeText);
+    const { text: safeResumeText, restore } = redactPII(resumeText);
+    const rawResult = await roastResume(safeResumeText);
+    // Restore PII tokens in all string fields of the roast result
+    const result = JSON.parse(restore(JSON.stringify(rawResult)));
 
     let shareToken = "";
     try {

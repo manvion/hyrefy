@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { analyzeJobDescription, calculateATSScore } from "@/lib/ai/ats-scorer";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -57,8 +58,9 @@ export async function POST(req: NextRequest) {
     // Analyze job description
     const jobAnalysis = await analyzeJobDescription(jobDescription, jobTitle || "Position");
 
-    // Calculate ATS score using raw resume text
-    const atsScore = await calculateATSScore(resolvedText, jobAnalysis);
+    // Calculate ATS score (redact PII before sending to AI)
+    const { text: safeResumeText } = redactPII(resolvedText);
+    const atsScore = await calculateATSScore(safeResumeText, jobAnalysis);
 
     // Create scan record
     const scan = await db.resumeScan.create({

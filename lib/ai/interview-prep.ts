@@ -1,4 +1,5 @@
 import { generateText } from "./client";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 export interface InterviewQuestion {
   question: string;
@@ -26,6 +27,10 @@ export async function generateInterviewPrep(input: InterviewPrepInput): Promise<
   const { jobTitle, company, jobDescription, industry, level, resumeText } = input;
   const hasResume = !!(resumeText && resumeText.trim().length > 50);
 
+  const { text: safeResumeText, restore } = hasResume
+    ? redactPII(resumeText!)
+    : { text: "", restore: (s: string) => s };
+
   const prompt = `You are an expert interview coach with 20+ years of experience preparing candidates at top companies.
 
 Generate exactly 20 high-quality interview questions for:
@@ -34,7 +39,7 @@ Generate exactly 20 high-quality interview questions for:
 - Level: ${level || "Mid-level"}
 - Industry: ${industry || "Technology"}
 ${jobDescription ? `\nJob Description (extract technical requirements, tools, frameworks, and skills mentioned):\n${jobDescription.slice(0, 2000)}` : ""}
-${hasResume ? `\nCANDIDATE RESUME:\n${resumeText!.slice(0, 2500)}` : ""}
+${hasResume ? `\nCANDIDATE RESUME:\n${safeResumeText.slice(0, 2500)}` : ""}
 
 CRITICAL RULES FOR SAMPLE ANSWERS:
 ${hasResume ? `• For behavioral, situational, HR, and STAR questions: write sample answers that reference the candidate's ACTUAL experiences from their resume above. Name their real companies, real projects, real technologies, real metrics. Make it sound like the candidate is speaking from their genuine background.
@@ -73,5 +78,7 @@ Return ONLY valid JSON. No markdown fences, no explanation outside the JSON.`;
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Failed to parse interview prep response");
 
-  return JSON.parse(jsonMatch[0]);
+  const result: InterviewPrepResult = JSON.parse(jsonMatch[0]);
+  // Restore any PII tokens that appeared in sample answers
+  return JSON.parse(restore(JSON.stringify(result)));
 }

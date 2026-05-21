@@ -21,6 +21,7 @@ import { getAuthUserId } from "@/lib/utils/auth";
 import { orStream, OR_MODELS } from "@/lib/ai/openrouter";
 import { generateCoverLetter, buildResumePrompt, parseResumeMeta, extractCleanResume } from "@/lib/ai/generate";
 import { quickATS } from "@/lib/ai/ats-scorer";
+import { redactPII } from "@/lib/utils/redact-pii";
 import { db } from "@/lib/db";
 import type { CountryCode, OutputLanguage } from "@/lib/ai/generate";
 
@@ -76,13 +77,16 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        // ── 0. Redact PII from resume before sending to AI ────────────────────
+        const { text: safeResumeText, restore } = redactPII(masterResumeText);
+
         // ── 1. Instant local ATS (keyword match on master resume) ──────────────
         const simpleKeywords = jobDescription
           .toLowerCase()
           .match(/\b[a-z][a-z0-9\-\+\.#]{2,}\b/g)
           ?.filter((w) => !STOPWORDS.has(w)) ?? [];
         const uniqueKeywords = [...new Set(simpleKeywords)].slice(0, 60);
-        const localAts = quickATS(masterResumeText, uniqueKeywords);
+        const localAts = quickATS(masterResumeText, uniqueKeywords); // use original for keyword matching
 
         send({
           type: "ats_local",
@@ -93,16 +97,16 @@ export async function POST(req: NextRequest) {
 
         // ── 2. Start cover letter in parallel (non-blocking) ──────────────────
         const coverLetterPromise = generateCoverLetter({
-          masterResumeText,
+          masterResumeText: safeResumeText,
           jobTitle,
           company,
           jobDescription,
           outputLanguage,
-        }).catch(() => ""); // never fail the stream over cover letter
+        }).then(restore).catch(() => ""); // restore PII in cover letter output
 
         // ── 3. Build resume prompt and stream tokens ──────────────────────────
         const { prompt, system } = buildResumePrompt({
-          masterResumeText,
+          masterResumeText: safeResumeText,
           jobTitle,
           company,
           targetCountry,
@@ -122,7 +126,7 @@ export async function POST(req: NextRequest) {
 
         // ── 4. Parse metadata embedded in streamed output ─────────────────────
         const meta = parseResumeMeta(rawResume);
-        const cleanResume = extractCleanResume(rawResume);
+        const cleanResume = restore(extractCleanResume(rawResume)); // restore PII in final resume
 
         // ── 5. Await cover letter (should be done by now) ─────────────────────
         const coverLetter = await coverLetterPromise;

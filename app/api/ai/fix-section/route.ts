@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { generateText } from "@/lib/ai/client";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -29,16 +30,18 @@ export async function POST(req: NextRequest) {
   const instruction = SECTION_PROMPTS[section] || "Improve the writing quality only. Do NOT add any information not already present in the original text.";
   const langNote = language === "fr" ? " Write the output in French (Canada)." : " Write the output in English.";
 
+  const { text: safeContent, restore } = redactPII(content);
+
   const prompt = `${instruction}${langNote}
 
-CRITICAL: Return ONLY the improved version of the text below — no explanations, no preamble, no markdown, no headings. The output must contain only the same information as the input, rewritten more clearly.
+CRITICAL: Return ONLY the improved version of the text below — no explanations, no preamble, no markdown, no headings. The output must contain only the same information as the input, rewritten more clearly. Preserve ALL [PLACEHOLDER] tokens exactly as they appear.
 
 ORIGINAL TEXT:
-${content}`;
+${safeContent}`;
 
   try {
     const improved = await generateText(prompt, { maxTokens: 1024 });
-    return NextResponse.json({ improved: improved.trim() });
+    return NextResponse.json({ improved: restore(improved.trim()) });
   } catch (err) {
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "AI fix failed" },

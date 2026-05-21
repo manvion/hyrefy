@@ -6,6 +6,7 @@
 
 import { generateText } from "./client";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "./countries";
+import { redactPII } from "@/lib/utils/redact-pii";
 
 export { SUPPORTED_COUNTRIES, type CountryCode };
 
@@ -44,20 +45,21 @@ export interface GenerateResult {
 // ─── Non-streaming path (used by /api/generate for fallback) ──────────────────
 
 export async function generateDocuments(input: GenerateInput): Promise<GenerateResult> {
-  const { masterResumeText, jobTitle, company, targetCountry, jobDescription, outputLanguage } = input;
-  const isFr = outputLanguage === "fr";
+  const { jobTitle, company, jobDescription, outputLanguage } = input;
+
+  const { text: safeResumeText, restore } = redactPII(input.masterResumeText);
+  const safeInput = { ...input, masterResumeText: safeResumeText };
 
   const [resume, cover] = await Promise.all([
-    generateTailoredResume(input),
-    generateCoverLetter({ masterResumeText, jobTitle, company, jobDescription, outputLanguage }),
+    generateTailoredResume(safeInput),
+    generateCoverLetter({ masterResumeText: safeResumeText, jobTitle, company, jobDescription, outputLanguage }),
   ]);
 
-  // ATS scores extracted from resume metadata block
   const meta = parseResumeMeta(resume.raw);
 
   return {
-    tailoredResume: resume.clean,
-    coverLetter: cover,
+    tailoredResume: restore(resume.clean),
+    coverLetter: restore(cover),
     atsScoreBefore: meta.before ?? 55,
     atsScoreAfter: meta.after ?? 80,
     keyChanges: meta.changes,
@@ -102,6 +104,7 @@ Where BEFORE/AFTER are integer ATS scores (0-100) for original vs tailored resum
 
 RULES:
 • Preserve ALL facts: companies, titles, dates, technologies, metrics
+• Preserve ALL [PLACEHOLDER] tokens exactly as they appear — they will be replaced with real values
 • Vary action verbs — no repetition in same section
 • Weave JD keywords naturally only where they genuinely fit
 • ${isFr ? "Français idiomatique, registre formel. Sections en MAJUSCULES." : "Professional English — no buzzwords (leverage, synergy, robust). No corporate filler."}`;
