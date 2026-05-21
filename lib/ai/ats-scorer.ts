@@ -62,10 +62,29 @@ JOB DESCRIPTION: ${jobDescription.slice(0, 2500)}`;
     thinking: false,
   });
 
-  const match = text.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("Failed to parse job analysis");
+  let result: JobAnalysis | null = null;
+  const matches = text.match(/\{[\s\S]*?\}/g) || [];
+  for (const m of matches) {
+    try {
+      const parsed = JSON.parse(m);
+      if (parsed.requiredSkills || parsed.keywords) { result = parsed as JobAnalysis; break; }
+    } catch { /**/ }
+  }
+  // Try the largest JSON blob
+  if (!result) {
+    const bigMatch = text.match(/\{[\s\S]*\}/);
+    if (bigMatch) {
+      try { result = JSON.parse(bigMatch[0]) as JobAnalysis; } catch { /**/ }
+    }
+  }
+  if (!result) {
+    // Graceful fallback — extract keywords from raw text
+    const words = jobDescription.toLowerCase().match(/\b[a-z][a-z0-9+#.\-]{2,}\b/g) || [];
+    const stopwords = new Set(["the","and","for","are","with","that","this","from","will","have"]);
+    const kw = [...new Set(words.filter(w => !stopwords.has(w)))].slice(0, 20);
+    result = { title: jobTitle, requiredSkills: kw.slice(0,10), preferredSkills: [], keywords: kw, experienceLevel: "Mid", industryTerms: [], responsibilities: [] };
+  }
 
-  const result = JSON.parse(match[0]) as JobAnalysis;
   cacheSet(cacheKey, JSON.stringify(result), 15 * 60 * 1000); // 15 min — JDs don't change
   return result;
 }

@@ -51,6 +51,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Resume text is required" }, { status: 400 });
     }
 
+    // Extract real candidate header BEFORE redaction
+    const { extractCandidateHeader } = await import("@/lib/ai/generate");
+    const candidateHeader = extractCandidateHeader(resumeText);
     const { text: safeResumeText, restore } = redactPII(resumeText);
     const rawResult = await generateCoverLetter({
       resumeText: safeResumeText,
@@ -60,6 +63,7 @@ export async function POST(request: NextRequest) {
       language,
       tone,
       candidateName,
+      candidateHeader,
     });
 
     const result = {

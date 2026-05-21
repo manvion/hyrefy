@@ -8,6 +8,19 @@ import { generateText } from "./client";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "./countries";
 import { redactPII } from "@/lib/utils/redact-pii";
 
+export function extractCandidateHeader(resumeText: string): string {
+  const lines = resumeText.split("\n").map(l => l.trim()).filter(Boolean);
+  const name = lines[0] || "";
+  const contact = lines.slice(1, 4).find(l =>
+    l.includes("@") || l.includes("+") || l.includes("|") || l.match(/linkedin|github/i)
+  ) || lines[1] || "";
+  const location = lines.slice(1, 5).find(l =>
+    !l.includes("@") && !l.includes("+") && l.length < 60 && l.length > 3 &&
+    !l.match(/^(SUMMARY|EXPERIENCE|EDUCATION|SKILLS)/i)
+  ) || "";
+  return [name, contact, location].filter(Boolean).join("\n");
+}
+
 export { SUPPORTED_COUNTRIES, type CountryCode };
 
 export type OutputLanguage = "en" | "fr";
@@ -47,12 +60,13 @@ export interface GenerateResult {
 export async function generateDocuments(input: GenerateInput): Promise<GenerateResult> {
   const { jobTitle, company, jobDescription, outputLanguage } = input;
 
+  const candidateHeader = extractCandidateHeader(input.masterResumeText);
   const { text: safeResumeText, restore } = redactPII(input.masterResumeText);
   const safeInput = { ...input, masterResumeText: safeResumeText };
 
   const [resume, cover] = await Promise.all([
     generateTailoredResume(safeInput),
-    generateCoverLetter({ masterResumeText: safeResumeText, jobTitle, company, jobDescription, outputLanguage }),
+    generateCoverLetter({ masterResumeText: safeResumeText, jobTitle, company, jobDescription, outputLanguage, candidateHeader }),
   ]);
 
   const meta = parseResumeMeta(resume.raw);
@@ -127,52 +141,33 @@ export function buildCoverLetterPrompt(
   jobTitle: string,
   company: string | undefined,
   jobDescription: string,
-  outputLanguage: OutputLanguage
+  outputLanguage: OutputLanguage,
+  candidateHeader?: string
 ): string {
   const isFr = outputLanguage === "fr";
-  const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
-    year: "numeric", month: "long", day: "numeric",
-  });
 
-  return `Write a complete, properly formatted professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}.
-${isFr ? "Write in French (Canada)." : "Write in English."}
+  return `Write a professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}. ${isFr ? "Write in French (Canada)." : "Write in English."}
 
-RESUME (extract candidate name and contact from the first 3 lines):
+RESUME (for context only — do NOT copy contact info):
 ${masterResumeText.slice(0, 6000)}
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 1500)}
 
-OUTPUT FORMAT — output the full letter exactly like this, preserving all blank lines:
+Write ONLY the 3 body paragraphs. Do NOT include a header, date, salutation, or closing — those are added automatically.
 
-[Candidate full name from resume line 1]
-[Email from resume] | [Phone from resume]
-[LinkedIn or city/country if present in resume]
-
-${today}
-
-Hiring Manager${company ? `\n${company}` : ""}
-
-${isFr ? "Madame, Monsieur," : "Dear Hiring Manager,"}
-
-[Paragraph 1 — compelling opening specific to this role, not generic]
-
-[Paragraph 2 — strongest real experience mapped to the job's key needs]
-
-[Paragraph 3 — second real experience or key differentiator mapped to the role]
-
-[Paragraph 4 — confident closing with call to action]
-
-${isFr ? "Cordialement," : "Sincerely,"}
-
-[Candidate full name from resume line 1]
+Paragraph 1 (3 sentences): Specific opening tied to this exact role — reference the job title and a real achievement from the resume.
+Paragraph 2 (3 sentences): Strongest real experience from the resume mapped to the job's key requirements. Name real employers/projects/metrics.
+Paragraph 3 (2 sentences): Confident closing with call to action.
 
 RULES:
-• 280-350 words in body paragraphs
+• 180-220 words total across all 3 paragraphs
+• Use ONLY facts from the resume — NEVER invent names, companies, metrics, or technologies not in the resume
 • No "I am writing to apply" openers
-• No AI buzzwords (leverage, spearhead, synergy)
-• Use only facts already in the resume — never invent details
-• Preserve all [PLACEHOLDER] tokens exactly as they appear`;
+• No buzzwords (leverage, spearhead, synergy, passionate, robust)
+• Preserve ALL [PLACEHOLDER] tokens exactly as they appear
+
+Output ONLY the 3 paragraphs separated by blank lines. Nothing else.`;
 }
 
 export async function generateCoverLetter(params: {
@@ -181,15 +176,36 @@ export async function generateCoverLetter(params: {
   company?: string;
   jobDescription: string;
   outputLanguage: OutputLanguage;
+  candidateHeader?: string;
 }): Promise<string> {
+  const isFr = params.outputLanguage === "fr";
+  const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
+    year: "numeric", month: "long", day: "numeric",
+  });
+  const salutation = isFr ? "Madame, Monsieur," : "Dear Hiring Manager,";
+  const closing = isFr ? "Cordialement," : "Sincerely,";
+  const recipientLine = params.company ? `Hiring Manager\n${params.company}` : "Hiring Manager";
+
   const prompt = buildCoverLetterPrompt(
     params.masterResumeText,
     params.jobTitle,
     params.company,
     params.jobDescription,
-    params.outputLanguage
+    params.outputLanguage,
+    params.candidateHeader
   );
-  return generateText(prompt, { maxTokens: 1200, task: "RESUME", temperature: 0.65 });
+  const body = await generateText(prompt, { maxTokens: 800, task: "RESUME", temperature: 0.65 });
+
+  // Assemble the full letter with the real header
+  const headerBlock = params.candidateHeader
+    ? `${params.candidateHeader}\n\n${today}\n\n${recipientLine}\n\n${salutation}`
+    : `${today}\n\n${recipientLine}\n\n${salutation}`;
+
+  const candidateName = params.candidateHeader
+    ? params.candidateHeader.split("\n")[0].trim()
+    : "";
+
+  return `${headerBlock}\n\n${body.trim()}\n\n${closing}\n\n${candidateName}`.trim();
 }
 
 // ─── Metadata parsing from streamed output ───────────────────────────────────

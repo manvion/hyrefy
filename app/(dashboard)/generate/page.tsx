@@ -70,7 +70,7 @@ export default async function GeneratePage() {
         if (user.subscription) {
           isPremium = user.subscription.status === "PREMIUM";
           scansUsed = user.subscription.scansUsed;
-          scansLimit = isPremium ? 9999 : 2;
+          scansLimit = isPremium ? 9999 : (user.subscription?.scansLimit ?? 3);
         }
       }
     } catch (e) {

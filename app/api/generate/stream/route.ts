@@ -19,7 +19,7 @@
 import { NextRequest } from "next/server";
 import { getAuthUserId } from "@/lib/utils/auth";
 import { orStream, OR_MODELS } from "@/lib/ai/openrouter";
-import { generateCoverLetter, buildResumePrompt, parseResumeMeta, extractCleanResume } from "@/lib/ai/generate";
+import { generateCoverLetter, buildResumePrompt, parseResumeMeta, extractCleanResume, extractCandidateHeader } from "@/lib/ai/generate";
 import { quickATS } from "@/lib/ai/ats-scorer";
 import { redactPII } from "@/lib/utils/redact-pii";
 import { db } from "@/lib/db";
@@ -96,13 +96,15 @@ export async function POST(req: NextRequest) {
         });
 
         // ── 2. Start cover letter in parallel (non-blocking) ──────────────────
+        const candidateHeader = extractCandidateHeader(masterResumeText); // from original, before redaction
         const coverLetterPromise = generateCoverLetter({
           masterResumeText: safeResumeText,
           jobTitle,
           company,
           jobDescription,
           outputLanguage,
-        }).then(restore).catch(() => ""); // restore PII in cover letter output
+          candidateHeader,
+        }).then(restore).catch(() => ""); // restore PII tokens in cover letter body
 
         // ── 3. Build resume prompt and stream tokens ──────────────────────────
         const { prompt, system } = buildResumePrompt({

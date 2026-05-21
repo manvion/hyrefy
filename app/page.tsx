@@ -1,11 +1,26 @@
-"use client";
-
+import type { Metadata } from "next";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { FileText, Building2, ArrowRight, CheckCircle, Clock } from "lucide-react";
 import { LanguageToggle } from "@/components/shared/language-toggle";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+
+export const metadata: Metadata = {
+  title: "Hyrefy — AI-Powered Resume & Cover Letter Generator",
+  description: "Upload your resume once. Paste any job posting — get a perfectly tailored resume and cover letter in English or French, ATS-optimized for your target country. Free to start.",
+  openGraph: {
+    title: "Hyrefy — AI-Powered Resume & Cover Letter Generator",
+    description: "Beat the ATS. Land more interviews. Tailored resumes and cover letters in seconds.",
+    url: "https://hyrefy.com",
+    siteName: "Hyrefy",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hyrefy — AI-Powered Resume & Cover Letter Generator",
+    description: "Beat the ATS. Land more interviews. Tailored resumes and cover letters in seconds.",
+  },
+};
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const RECRUITER_URL = process.env.NEXT_PUBLIC_RECRUITER_URL || "/recruiter";
@@ -53,12 +68,7 @@ export default function SelectorPage() {
 
       {/* ── Hero copy ─────────────────────────────────────────────── */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 pb-8">
-        <motion.div
-          initial={{ opacity: 0, y: 28 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-          className="text-center mb-10"
-        >
+        <div className="text-center mb-10">
           <span className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-primary px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/25 mb-5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
             AI-Powered Career Platform
@@ -69,17 +79,13 @@ export default function SelectorPage() {
           <p className="text-lg sm:text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
             Two platforms, one mission — helping the right people find each other.
           </p>
-        </motion.div>
+        </div>
 
         {/* ── Choice cards ─────────────────────────────────────────── */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-4xl">
 
           {/* ── Job Seeker ─────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.12 }}
-          >
+          <div>
             <Link href={`${APP_URL}/job-seekers`} className="block h-full">
               <div className="
                 group relative h-full rounded-2xl overflow-hidden cursor-pointer
@@ -142,14 +148,10 @@ export default function SelectorPage() {
                 </div>
               </div>
             </Link>
-          </motion.div>
+          </div>
 
           {/* ── Recruiter ──────────────────────────────────────────── */}
-          <motion.div
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.55, delay: 0.22 }}
-          >
+          <div>
             <Link href={RECRUITER_URL} className="block h-full">
               <div className="
                 group relative h-full rounded-2xl overflow-hidden cursor-pointer
@@ -202,16 +204,11 @@ export default function SelectorPage() {
                 </div>
               </div>
             </Link>
-          </motion.div>
+          </div>
         </div>
 
         {/* Domain hint */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.55 }}
-          className="mt-7 flex items-center gap-3 text-xs text-muted-foreground/40"
-        >
+        <div className="mt-7 flex items-center gap-3 text-xs text-muted-foreground/40">
           <a href={`${APP_URL}/job-seekers`} className="flex items-center gap-1 hover:text-muted-foreground/70 hover:underline transition-colors">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             app.hyrefy.com
@@ -221,7 +218,7 @@ export default function SelectorPage() {
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             recruiter.hyrefy.com
           </a>
-        </motion.div>
+        </div>
       </main>
 
       {/* Footer */}

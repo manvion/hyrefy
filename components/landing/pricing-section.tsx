@@ -9,15 +9,15 @@ import { Check, Zap, Globe } from "lucide-react";
 import { useState, useEffect } from "react";
 
 const CURRENCY_MAP: Record<string, { symbol: string; monthly: number; yearly: number; code: string }> = {
-  CA: { symbol: "CA$", monthly: 25, yearly: 199, code: "CAD" },
-  US: { symbol: "$",   monthly: 19, yearly: 149, code: "USD" },
-  GB: { symbol: "£",   monthly: 15, yearly: 119, code: "GBP" },
-  AU: { symbol: "A$",  monthly: 28, yearly: 219, code: "AUD" },
-  NZ: { symbol: "NZ$", monthly: 29, yearly: 229, code: "NZD" },
-  FR: { symbol: "€",   monthly: 18, yearly: 139, code: "EUR" },
-  BE: { symbol: "€",   monthly: 18, yearly: 139, code: "EUR" },
-  CH: { symbol: "CHF", monthly: 19, yearly: 149, code: "CHF" },
-  IN: { symbol: "₹",   monthly: 999, yearly: 7999, code: "INR" },
+  CA: { symbol: "CA$", monthly: 25, yearly: 150, code: "CAD" },
+  US: { symbol: "$",   monthly: 19, yearly: 114, code: "USD" },
+  GB: { symbol: "£",   monthly: 15, yearly: 90,  code: "GBP" },
+  AU: { symbol: "A$",  monthly: 28, yearly: 168, code: "AUD" },
+  NZ: { symbol: "NZ$", monthly: 29, yearly: 174, code: "NZD" },
+  FR: { symbol: "€",   monthly: 18, yearly: 108, code: "EUR" },
+  BE: { symbol: "€",   monthly: 18, yearly: 108, code: "EUR" },
+  CH: { symbol: "CHF", monthly: 19, yearly: 114, code: "CHF" },
+  IN: { symbol: "₹",   monthly: 999, yearly: 5994, code: "INR" },
 };
 
 const DEFAULT_CURRENCY = CURRENCY_MAP.CA;
@@ -85,8 +85,7 @@ export function PricingSection() {
               className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${billing === "yearly" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
             >
               Yearly
-              {billing === "yearly" && <Badge variant="secondary" className="text-[10px] py-0">Save {yearlySavings}%</Badge>}
-              {billing !== "yearly" && <span className="text-[10px] text-emerald-400 font-semibold">-{yearlySavings}%</span>}
+              <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">Save 50%</span>
             </button>
           </div>
 

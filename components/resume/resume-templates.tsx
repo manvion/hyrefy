@@ -75,7 +75,7 @@ function buildTemplateHtml(text: string, templateId: TemplateId, title: string):
   .dot { color: #0A66C2; flex-shrink: 0; }
   .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
   .spacer { height: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 1.8cm; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }
 </style>
 <div class="page">
   <div class="name">${firstContent.trim()}</div>
@@ -96,7 +96,7 @@ function buildTemplateHtml(text: string, templateId: TemplateId, title: string):
   .dot { color: #1a1a2e; flex-shrink: 0; }
   .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; }
   .spacer { height: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }
 </style>
 <div class="page">
   <div class="header">
@@ -119,7 +119,7 @@ function buildTemplateHtml(text: string, templateId: TemplateId, title: string):
   .dot { color: #0d7377; flex-shrink: 0; }
   .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
   .spacer { height: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 1.5cm; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }
 </style>
 <div class="page">
   <div class="header">
@@ -142,7 +142,7 @@ function buildTemplateHtml(text: string, templateId: TemplateId, title: string):
   .dot { color: #2d3436; flex-shrink: 0; font-weight: bold; }
   .body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; }
   .spacer { height: 4px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }
 </style>
 <div class="page">
   <div class="header">
@@ -165,7 +165,7 @@ function buildTemplateHtml(text: string, templateId: TemplateId, title: string):
   .dot { color: #6c5ce7; flex-shrink: 0; }
   .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; }
   .spacer { height: 6px; }
-  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }
+  @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }
 </style>
 <div class="page">
   <div class="name">${firstContent.trim()}</div>
@@ -259,7 +259,7 @@ body { font-family: 'Calibri', 'Arial', sans-serif; font-size: 10.5pt; color: #2
 .dot { color: #0A66C2; flex-shrink: 0; }
 .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
 .spacer { height: 4px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 1.8cm; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
     classic: `* { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.5pt; color: #111; background: #fff; }
@@ -272,7 +272,7 @@ body { font-family: 'Georgia', 'Times New Roman', serif; font-size: 10.5pt; colo
 .dot { color: #1a1a2e; flex-shrink: 0; }
 .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.6; }
 .spacer { height: 4px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
     clean: `* { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Trebuchet MS', 'Helvetica Neue', sans-serif; font-size: 10.5pt; color: #2d3436; background: #fff; }
@@ -285,7 +285,7 @@ body { font-family: 'Trebuchet MS', 'Helvetica Neue', sans-serif; font-size: 10.
 .dot { color: #0d7377; flex-shrink: 0; }
 .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
 .spacer { height: 4px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 1.5cm; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
     executive: `* { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Arial', sans-serif; font-size: 10pt; color: #1a1a1a; background: #fff; }
@@ -298,7 +298,7 @@ body { font-family: 'Arial', sans-serif; font-size: 10pt; color: #1a1a1a; backgr
 .dot { color: #2d3436; flex-shrink: 0; font-weight: bold; }
 .body-line { font-size: 10pt; margin: 2px 0; line-height: 1.55; }
 .spacer { height: 4px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
     minimal: `* { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Helvetica Neue', 'Arial', sans-serif; font-size: 10.5pt; color: #333; background: #fff; }
@@ -311,7 +311,7 @@ body { font-family: 'Helvetica Neue', 'Arial', sans-serif; font-size: 10.5pt; co
 .dot { color: #6c5ce7; flex-shrink: 0; }
 .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.65; color: #333; }
 .spacer { height: 6px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 2cm; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
 
     bold: `* { margin:0; padding:0; box-sizing:border-box; }
 body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: #1a1a1a; background: #fff; }
@@ -325,7 +325,7 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
 .dot { color: #d63031; flex-shrink: 0; font-weight: bold; }
 .body-line { font-size: 10.5pt; margin: 2px 0; line-height: 1.55; }
 .spacer { height: 4px; }
-@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { margin: 0; } }`,
+@media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } @page { size: A4; margin: 0; } }`,
   };
 
   const bodyHtml: Record<TemplateId, string> = {
@@ -354,7 +354,7 @@ export function openPrintCoverLetter(text: string, title: string) {
 body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.75;color:#111;background:#fff}
 .page{max-width:680px;margin:0 auto;padding:52px 56px}
 p{margin-bottom:14pt}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:2cm;size:A4}}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}}
 </style></head><body><div class="page">${paragraphs}</div><script>window.onload=()=>window.print();<\/script></body></html>`;
 
   const blob = new Blob([html], { type: "text/html" });

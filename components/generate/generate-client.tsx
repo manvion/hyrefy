@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { RichTextEditor, plainTextToHtml, htmlToPlainText } from "@/components/ui/rich-text-editor";
 import {
@@ -319,6 +320,7 @@ export function GenerateClient({
   scansLimit = 2,
   isPremium = false,
 }: Props) {
+  const router = useRouter();
   const [step, setStep] = useState<Step>("form");
   const [form, setForm] = useState({
     jobTitle: "",
@@ -421,6 +423,7 @@ export function GenerateClient({
         });
         setStreamPhase("done");
         setStep("result");
+        router.refresh();
         break;
       case "error":
         setError(event.message ?? "Generation failed");
@@ -442,6 +445,7 @@ export function GenerateClient({
       setEditedResume(data.tailoredResume);
       setEditedCover(data.coverLetter);
       setStep("result");
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setStep("form");

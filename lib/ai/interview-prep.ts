@@ -74,7 +74,7 @@ Include EXACTLY this mix of 20 questions:
 
 Return ONLY valid JSON. No markdown fences, no explanation outside the JSON.`;
 
-  const text = await generateText(prompt, { maxTokens: 7000 });
+  const text = await generateText(prompt, { maxTokens: 4000 });
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error("Failed to parse interview prep response");
 
