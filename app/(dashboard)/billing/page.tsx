@@ -46,36 +46,56 @@ interface SubscriptionData {
 
 // ─── Checkout modal ─────────────────────────────────────────────────────────────
 
-function CheckoutModal({ billing, onClose }: { billing: "monthly" | "yearly"; onClose: () => void }) {
+function CheckoutModal({
+  initialBilling, pricing, isNewUser, onClose,
+}: {
+  initialBilling?: "monthly" | "yearly";
+  pricing: CountryPrice | null;
+  isNewUser: boolean;
+  onClose: () => void;
+}) {
+  const [billing, setBilling] = useState<"monthly" | "yearly" | null>(initialBilling ?? null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [loadingPlan, setLoadingPlan] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchClientSecret = useCallback(async () => {
+  const startCheckout = useCallback(async (plan: "monthly" | "yearly") => {
+    setBilling(plan);
+    setLoadingPlan(true);
     setError(null);
-    const locale =
-      typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("fr") ? "fr" : "en";
+    const locale = typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("fr") ? "fr" : "en";
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ locale, billing }),
+        body: JSON.stringify({ locale, billing: plan }),
       });
       const data = await res.json();
-      if (data.clientSecret) {
-        setClientSecret(data.clientSecret);
-      } else {
-        setError(data.error || "Failed to start checkout");
-      }
+      if (data.clientSecret) setClientSecret(data.clientSecret);
+      else setError(data.error || "Failed to start checkout");
     } catch {
       setError("Connection error. Please try again.");
+    } finally {
+      setLoadingPlan(false);
     }
-  }, [billing]);
+  }, []);
 
-  useEffect(() => { fetchClientSecret(); }, [fetchClientSecret]);
+  // Auto-start if billing pre-selected (e.g. from URL param)
+  useEffect(() => {
+    if (initialBilling) startCheckout(initialBilling);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const sym = pricing?.symbol ?? "$";
+  const monthlyFull = pricing ? `${sym}${pricing.displayAmount ?? "19"}` : "$19";
+  const firstMonthPrice = pricing ? `${sym}${(pricing.amount / 200).toFixed(2)}` : "half price";
+  const yearlyPerMonth = pricing ? `${sym}${pricing.displayYearlyPerMonth}` : "$9.50";
+  const yearlyTotal = pricing?.displayYearlyTotal ?? "$114";
+  const yearlyFullPerMonth = pricing ? `${sym}${pricing.displayAmount ?? "19"}` : "$19";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={!clientSecret ? onClose : undefined} />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.97, y: 8 }}
@@ -87,47 +107,105 @@ function CheckoutModal({ billing, onClose }: { billing: "monthly" | "yearly"; on
         <div className="flex items-center justify-between px-5 py-4 border-b border-border/40 bg-card/50">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-emerald-500" />
-            <span className="font-semibold text-foreground">Secure Checkout</span>
-            <Badge variant="secondary" className="text-[10px] py-0">
-              {billing === "yearly" ? "Annual · Save 50%" : "Monthly"}
-            </Badge>
+            <span className="font-semibold text-foreground">
+              {clientSecret ? "Secure Checkout" : "Choose Your Plan"}
+            </span>
+            {billing && clientSecret && (
+              <Badge variant="secondary" className="text-[10px] py-0">
+                {billing === "yearly" ? "Annual · Save 50%" : "Monthly"}
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-3">
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Lock className="h-3 w-3" />Stripe
-            </span>
-            <button
-              onClick={onClose}
-              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
-            >
+            <span className="flex items-center gap-1 text-xs text-muted-foreground"><Lock className="h-3 w-3" />Stripe</span>
+            <button onClick={onClose} className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent transition-all">
               <X className="h-4 w-4" />
             </button>
           </div>
         </div>
 
-        {/* Checkout area */}
-        <div className="p-4 max-h-[80vh] overflow-y-auto">
-          {error && (
-            <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 mb-4">
-              <p className="text-sm text-destructive">{error}</p>
-              <Button size="sm" variant="outline" className="mt-2" onClick={fetchClientSecret}>
-                Try again
-              </Button>
-            </div>
-          )}
+        {/* Step 1 — Plan chooser */}
+        {!clientSecret && !loadingPlan && (
+          <div className="p-5 space-y-4">
+            <p className="text-xs text-muted-foreground text-center">Select your billing period to continue</p>
 
-          {!clientSecret && !error && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
-            </div>
-          )}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Monthly */}
+              <button
+                onClick={() => startCheckout("monthly")}
+                className="relative rounded-2xl border-2 border-border/50 bg-card/40 p-4 text-left hover:border-primary/40 hover:bg-primary/5 transition-all group"
+              >
+                <p className="text-sm font-semibold text-foreground mb-2">Monthly</p>
+                {isNewUser ? (
+                  <>
+                    <p className="text-xs text-muted-foreground line-through">{monthlyFull}/mo</p>
+                    <p className="text-2xl font-bold text-emerald-400">{firstMonthPrice}</p>
+                    <p className="text-xs text-muted-foreground">/mo first month</p>
+                    <p className="text-xs text-muted-foreground mt-1">then {monthlyFull}/mo</p>
+                    <span className="mt-2 inline-block text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
+                      50% OFF 1ST MONTH
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-foreground">{monthlyFull}</p>
+                    <p className="text-xs text-muted-foreground">/mo · cancel anytime</p>
+                  </>
+                )}
+              </button>
 
-          {clientSecret && (
+              {/* Annual — highlighted */}
+              <button
+                onClick={() => startCheckout("yearly")}
+                className="relative rounded-2xl border-2 border-emerald-500/60 bg-emerald-500/5 p-4 text-left hover:border-emerald-500 hover:bg-emerald-500/10 transition-all"
+              >
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                  <span className="text-[10px] font-bold bg-emerald-500 text-white px-2.5 py-0.5 rounded-full whitespace-nowrap">
+                    BEST VALUE
+                  </span>
+                </div>
+                <p className="text-sm font-semibold text-foreground mb-2">Annual</p>
+                <p className="text-xs text-muted-foreground line-through">{yearlyFullPerMonth}/mo</p>
+                <p className="text-2xl font-bold text-emerald-400">{yearlyPerMonth}</p>
+                <p className="text-xs text-muted-foreground">/mo · {yearlyTotal} billed yearly</p>
+                <span className="mt-2 inline-block text-[10px] font-bold bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">
+                  SAVE 50%
+                </span>
+              </button>
+            </div>
+
+            {error && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Loading */}
+        {loadingPlan && (
+          <div className="flex flex-col items-center justify-center py-14 gap-3">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">Setting up your checkout…</p>
+          </div>
+        )}
+
+        {/* Step 2 — Stripe embedded checkout */}
+        {clientSecret && (
+          <div className="p-4 max-h-[80vh] overflow-y-auto">
+            {error && (
+              <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 mb-4">
+                <p className="text-sm text-destructive">{error}</p>
+                <Button size="sm" variant="outline" className="mt-2" onClick={() => billing && startCheckout(billing)}>
+                  Try again
+                </Button>
+              </div>
+            )}
             <EmbeddedCheckoutProvider stripe={stripePromise} options={{ clientSecret }}>
               <EmbeddedCheckout />
             </EmbeddedCheckoutProvider>
-          )}
-        </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );
@@ -141,8 +219,7 @@ export default function BillingPage() {
   const autoCheckout = searchParams.get("checkout") === "1";
 
   const [showCheckout, setShowCheckout] = useState(false);
-  const billingParam = searchParams.get("billing");
-  const [billing, setBilling] = useState<"monthly" | "yearly">(billingParam === "yearly" ? "yearly" : "monthly");
+  const billingParam = searchParams.get("billing") as "monthly" | "yearly" | null;
   const [portalLoading, setPortalLoading] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [pricing, setPricing] = useState<CountryPrice | null>(null);
@@ -169,20 +246,10 @@ export default function BillingPage() {
 
   // Pricing display
   const sym = pricing?.symbol ?? "$";
-  const label = pricing?.label ?? "USD";
   const monthlyDisplay = pricing?.displayAmount ?? "$19";
   const yearlyPerMonthDisplay = pricing ? `${sym}${pricing.displayYearlyPerMonth}` : "$9.50";
   const yearlyTotalDisplay = pricing?.displayYearlyTotal ?? "$114";
-
-  // Active price to show in the premium card
-  const activePriceDisplay =
-    billing === "yearly" ? yearlyPerMonthDisplay : monthlyDisplay;
-  const activePriceSubline =
-    billing === "yearly"
-      ? `${yearlyTotalDisplay} billed annually · Save 50%`
-      : isNewUser
-      ? `First month 50% off — then ${monthlyDisplay}/mo`
-      : `Billed monthly · Cancel anytime`;
+  const firstMonthDisplay = pricing ? `${sym}${(pricing.amount / 200).toFixed(2)}` : "half price";
 
   // Days remaining
   const daysRemaining = (() => {
@@ -392,31 +459,25 @@ export default function BillingPage() {
                   <CardDescription>Everything you need to land the job</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {/* Price display */}
-                  <div className="mb-5">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-4xl font-bold text-foreground">{activePriceDisplay}</span>
-                      <span className="text-sm text-muted-foreground">/mo</span>
-                      {billing === "yearly" && (
-                        <span className="text-sm font-semibold text-emerald-400 ml-1">· Save 50%</span>
-                      )}
+                  {/* Price preview — two options side by side */}
+                  <div className="grid grid-cols-2 gap-2 mb-5">
+                    <div className="rounded-xl border border-border/40 bg-muted/20 p-3 text-center">
+                      <p className="text-[10px] text-muted-foreground mb-1">Monthly</p>
+                      {isNewUser && <p className="text-xs line-through text-muted-foreground">{monthlyDisplay}/mo</p>}
+                      <p className="text-xl font-bold text-foreground">{isNewUser ? firstMonthDisplay : monthlyDisplay}</p>
+                      <p className="text-[10px] text-muted-foreground">{isNewUser ? "1st month" : "/mo"}</p>
+                      {isNewUser && <span className="text-[9px] font-bold text-emerald-400">50% OFF 1ST</span>}
                     </div>
-                    <p className={`text-xs mt-1 ${
-                      billing === "monthly" && isNewUser ? "text-emerald-400 font-medium" : "text-muted-foreground"
-                    }`}>
-                      {activePriceSubline}
-                    </p>
-                    {/* What you pay today */}
-                    {isNewUser && billing === "monthly" && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                        <Gift className="h-3 w-3 text-emerald-400" />
-                        <span className="text-xs font-semibold text-emerald-400">
-                          Pay {monthlyDisplay && pricing
-                            ? `${pricing.symbol}${(pricing.amount / 200).toFixed(2)}`
-                            : "half price"} today
-                        </span>
+                    <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/5 p-3 text-center relative">
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2">
+                        <span className="text-[9px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full whitespace-nowrap">BEST VALUE</span>
                       </div>
-                    )}
+                      <p className="text-[10px] text-muted-foreground mb-1">Annual</p>
+                      <p className="text-xs line-through text-muted-foreground">{monthlyDisplay}/mo</p>
+                      <p className="text-xl font-bold text-emerald-400">{yearlyPerMonthDisplay}</p>
+                      <p className="text-[10px] text-muted-foreground">/mo · {yearlyTotalDisplay}/yr</p>
+                      <span className="text-[9px] font-bold text-emerald-400">SAVE 50%</span>
+                    </div>
                   </div>
 
                   <ul className="space-y-2 text-sm mb-6">
@@ -430,53 +491,13 @@ export default function BillingPage() {
                     ))}
                   </ul>
 
-                  {/* Billing period selector — change this before checkout */}
-                  <div className="mb-4">
-                    <p className="text-xs text-muted-foreground mb-2 font-medium">Choose billing period:</p>
-                    <div className="inline-flex w-full items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1">
-                      <button
-                        onClick={() => setBilling("monthly")}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
-                          billing === "monthly"
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Monthly
-                        {isNewUser && billing === "monthly" && (
-                          <span className="ml-1.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
-                            50% OFF 1ST
-                          </span>
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setBilling("yearly")}
-                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
-                          billing === "yearly"
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        Annual
-                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
-                          Save 50%
-                        </span>
-                      </button>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground mt-1.5">
-                      {billing === "yearly"
-                        ? `${yearlyTotalDisplay} billed once per year · Prices in ${label}`
-                        : `Prices in ${label} · Cancel anytime`}
-                    </p>
-                  </div>
-
                   <Button onClick={() => setShowCheckout(true)} variant="gradient" className="w-full" size="lg">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    {billing === "yearly" ? "Get Annual Plan · Save 50%" : isNewUser ? "Claim 50% Off & Upgrade" : "Upgrade to Premium"}
+                    {isNewUser ? "Claim Offer & Choose Plan" : "Choose Plan & Upgrade"}
                   </Button>
 
                   <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-center gap-1">
-                    <Lock className="h-3 w-3" />Secure payment · Powered by Stripe · Cancel anytime
+                    <Lock className="h-3 w-3" />You&apos;ll choose Monthly or Annual on the next screen
                   </p>
                 </CardContent>
               </Card>
@@ -485,10 +506,14 @@ export default function BillingPage() {
         )}
       </div>
 
-      {/* Checkout modal — passes billing type so API charges the right amount */}
       <AnimatePresence>
         {showCheckout && (
-          <CheckoutModal billing={billing} onClose={() => setShowCheckout(false)} />
+          <CheckoutModal
+            initialBilling={billingParam ?? undefined}
+            pricing={pricing}
+            isNewUser={isNewUser}
+            onClose={() => setShowCheckout(false)}
+          />
         )}
       </AnimatePresence>
     </>

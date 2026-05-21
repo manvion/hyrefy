@@ -144,18 +144,28 @@ export function PricingSection() {
             </div>
             <div className="mb-6">
               <h3 className="text-xl font-bold mb-1">{premium.name}</h3>
-              <div className="flex items-baseline gap-1 mb-1">
-                <span className="text-4xl font-bold">{price.symbol}{displayPrice}</span>
-                <span className="text-muted-foreground">/mo</span>
-              </div>
               {billing === "yearly" ? (
-                <p className="text-xs text-emerald-400 mb-2">
-                  {price.symbol}{price.yearly} billed annually · Save {yearlySavings}%
-                </p>
+                <>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}</span>
+                    <span className="text-4xl font-bold text-emerald-400">{price.symbol}{displayPrice}</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="text-xs text-emerald-400 mb-2 font-semibold">
+                    {price.symbol}{price.yearly} billed annually · Save {yearlySavings}%
+                  </p>
+                </>
               ) : (
-                <p className="text-xs text-emerald-400 mb-2 flex items-center gap-1">
-                  🎁 New users: 50% off your first month
-                </p>
+                <>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}</span>
+                    <span className="text-4xl font-bold text-emerald-400">{price.symbol}{Math.round(price.monthly / 2)}</span>
+                    <span className="text-muted-foreground">/mo</span>
+                  </div>
+                  <p className="text-xs text-emerald-400 mb-2 font-semibold">
+                    🎁 First month — then {price.symbol}{price.monthly}/mo
+                  </p>
+                </>
               )}
               <p className="text-sm text-muted-foreground">{premium.desc}</p>
             </div>
