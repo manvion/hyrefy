@@ -136,17 +136,29 @@ async function generateTailoredResume(
 
 // ─── Cover letter generation ──────────────────────────────────────────────────
 
+const COVER_LETTER_COUNTRY_GUIDE: Partial<Record<CountryCode, string>> = {
+  GB: "Tone: formal British English. Use 'I look forward to hearing from you' as closing hook. Avoid contractions.",
+  AU: "Tone: direct and conversational Australian English. Emphasise cultural fit and teamwork.",
+  NZ: "Tone: friendly and professional New Zealand English. Emphasise adaptability and team contribution.",
+  FR: "Tone: formal and structured (style lettre de motivation). Polished vocabulary, no colloquialisms.",
+  BE: "Tone: formal Belgian French or Dutch-influenced. Clear structure, no personal jokes or informalities.",
+  CH: "Tone: precise and formal Swiss style. Structured, concise, avoid superlatives.",
+  IN: "Tone: professional Indian English. Highlight technical skills and academic credentials if relevant.",
+};
+
 export function buildCoverLetterPrompt(
   masterResumeText: string,
   jobTitle: string,
   company: string | undefined,
   jobDescription: string,
   outputLanguage: OutputLanguage,
-  candidateHeader?: string
+  candidateHeader?: string,
+  targetCountry?: CountryCode
 ): string {
   const isFr = outputLanguage === "fr";
+  const countryGuide = targetCountry ? COVER_LETTER_COUNTRY_GUIDE[targetCountry] ?? "" : "";
 
-  return `Write a professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}. ${isFr ? "Write in French (Canada)." : "Write in English."}
+  return `Write a professional cover letter for ${jobTitle}${company ? ` at ${company}` : ""}. ${isFr ? "Write in French (Canada)." : "Write in English."}${countryGuide ? `\nStyle: ${countryGuide}` : ""}
 
 RESUME (for context only — do NOT copy contact info):
 ${masterResumeText.slice(0, 6000)}
@@ -190,6 +202,7 @@ export async function generateCoverLetter(params: {
   jobDescription: string;
   outputLanguage: OutputLanguage;
   candidateHeader?: string;
+  targetCountry?: CountryCode;
 }): Promise<string> {
   const isFr = params.outputLanguage === "fr";
   const today = new Date().toLocaleDateString(isFr ? "fr-CA" : "en-CA", {
@@ -205,7 +218,8 @@ export async function generateCoverLetter(params: {
     params.company,
     params.jobDescription,
     params.outputLanguage,
-    params.candidateHeader
+    params.candidateHeader,
+    params.targetCountry
   );
   const raw = await generateText(prompt, { maxTokens: 800, task: "RESUME", temperature: 0.65 });
   const body = extractParagraphsOnly(raw);

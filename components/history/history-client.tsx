@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES } from "@/lib/ai/countries";
 import Link from "next/link";
-import { openPrintWithTemplate, openPrintCoverLetter, downloadDocxWithTemplate, downloadDocxCoverLetter } from "@/components/resume/resume-templates";
+import { openPrintWithTemplate, openPrintCoverLetter, downloadDocxWithTemplate, downloadDocxCoverLetter, countryToTemplateId } from "@/components/resume/resume-templates";
 
 interface ScanItem {
   id: string;
@@ -203,11 +203,11 @@ function ScanCard({
                 {hasResume && (
                   <>
                     <Button size="sm" variant="gradient" className="h-7 text-xs gap-1.5"
-                      onClick={() => handleDownload(() => openPrintWithTemplate(ai!.tailoredResume!, "modern", `Resume-${slug}`))}>
+                      onClick={() => handleDownload(() => openPrintWithTemplate(ai!.tailoredResume!, countryToTemplateId(scan.jobCountry ?? "CA"), `Resume-${slug}`))}>
                       <FileText className="h-3 w-3" />Resume PDF
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-                      onClick={() => handleDownload(() => downloadDocxWithTemplate(ai!.tailoredResume!, "modern", `resume-${slug}.docx`))}>
+                      onClick={() => handleDownload(() => downloadDocxWithTemplate(ai!.tailoredResume!, countryToTemplateId(scan.jobCountry ?? "CA"), `resume-${slug}.docx`))}>
                       <Download className="h-3 w-3" />.docx
                     </Button>
                   </>

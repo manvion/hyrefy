@@ -104,6 +104,7 @@ export async function POST(req: NextRequest) {
           jobDescription,
           outputLanguage,
           candidateHeader,
+          targetCountry,
         }).then(restore).catch(() => ""); // restore PII tokens in cover letter body
 
         // ── 3. Build resume prompt and stream tokens ──────────────────────────

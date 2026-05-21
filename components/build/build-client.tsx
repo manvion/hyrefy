@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "@/lib/ai/countries";
 import { ResumePreview, COUNTRY_STYLES } from "@/components/resume/resume-preview";
-import { openPrintWithTemplate, downloadDocxWithTemplate } from "@/components/resume/resume-templates";
+import { openPrintWithTemplate, downloadDocxWithTemplate, countryToTemplateId } from "@/components/resume/resume-templates";
 
 type Language = "en" | "fr";
 
@@ -251,12 +251,12 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
 
   const downloadPDF = (lang: Language) => {
     const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
-    openPrintWithTemplate(text, "modern", `Resume-${lang}`);
+    openPrintWithTemplate(text, countryToTemplateId(targetCountry), `Resume-${lang}`);
   };
 
   const downloadDocx = async (lang: Language) => {
     const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
-    await downloadDocxWithTemplate(text, "modern", `resume-${lang}.docx`);
+    await downloadDocxWithTemplate(text, countryToTemplateId(targetCountry), `resume-${lang}.docx`);
   };
 
   const previewText = previewLang === "fr"

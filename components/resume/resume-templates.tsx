@@ -26,6 +26,19 @@ export const TEMPLATES: {
   { id: "bold",      name: "Bold",      country: "India / UAE",    flag: "🇮🇳", desc: "Strong header, impact-first",  accentColor: "#d63031", fontFamily: "'Arial', 'Helvetica', sans-serif",         preview: "bg-red-700"    },
 ];
 
+const COUNTRY_TEMPLATE_MAP: Record<string, TemplateId> = {
+  US: "modern", CA: "modern",
+  GB: "classic",
+  AU: "clean",  NZ: "clean",
+  CH: "executive",
+  FR: "minimal", BE: "minimal",
+  IN: "bold",
+};
+
+export function countryToTemplateId(countryCode: string): TemplateId {
+  return COUNTRY_TEMPLATE_MAP[countryCode] ?? "modern";
+}
+
 function buildTemplateHtml(text: string, templateId: TemplateId, title: string): string {
   const lines = text.split("\n");
   const firstContent = lines.find(l => l.trim()) ?? "";
@@ -348,20 +361,27 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
 
 // ─── Cover letter print / DOCX ────────────────────────────────────────────────
 
-export function openPrintCoverLetter(text: string, title: string) {
-  const paragraphs = text.split("\n").map(line => {
-    const t = line.trim();
-    if (!t) return `<div style="height:10pt"></div>`;
-    return `<p>${t.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+export function openPrintCoverLetter(text: string, title: string, accentColor = "#0A66C2") {
+  const paragraphs = text.split("\n\n").map(para => {
+    const trimmed = para.trim();
+    if (!trimmed) return "";
+    const joined = trimmed.replace(/\n/g, " ");
+    if (joined.length < 90 || /^(dear|madame|monsieur|cordialement|sincerely|regards)/i.test(joined)) {
+      return trimmed.split("\n").map(l => `<p class="hdr">${l.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`).join("");
+    }
+    return `<p class="body">${joined.replace(/</g,"&lt;").replace(/>/g,"&gt;")}</p>`;
   }).join("\n");
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.75;color:#111;background:#fff}
-.page{max-width:680px;margin:0 auto;padding:52px 56px}
-p{margin-bottom:14pt;text-align:justify;hyphens:auto}
+body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.75;color:#1f2937;background:#fff}
+.bar-top{height:5px;background:${accentColor}}
+.bar-bot{height:2px;background:${accentColor};opacity:0.25}
+.page{max-width:680px;margin:0 auto;padding:44px 52px}
+p.hdr{margin-bottom:14pt}
+p.body{margin-bottom:14pt;text-align:justify;hyphens:auto}
 @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{size:A4;margin:0}}
-</style></head><body><div class="page">${paragraphs}</div><script>window.onload=()=>window.print();<\/script></body></html>`;
+</style></head><body><div class="bar-top"></div><div class="page">${paragraphs}</div><div class="bar-bot"></div><script>window.onload=()=>window.print();<\/script></body></html>`;
 
   const blob = new Blob([html], { type: "text/html" });
   const url = URL.createObjectURL(blob);

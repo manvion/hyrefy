@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "@/lib/ai/countries";
 import Link from "next/link";
 import { ResumePreview, CoverLetterPreview, COUNTRY_STYLES } from "@/components/resume/resume-preview";
-import { openPrintWithTemplate, openPrintCoverLetter, downloadDocxWithTemplate, downloadDocxCoverLetter } from "@/components/resume/resume-templates";
+import { openPrintWithTemplate, openPrintCoverLetter, downloadDocxWithTemplate, downloadDocxCoverLetter, countryToTemplateId } from "@/components/resume/resume-templates";
 
 type Language = "en" | "fr";
 type Step = "form" | "generating" | "result";
@@ -99,7 +99,7 @@ function UsageBanner({ used, limit, isPremium }: { used: number; limit: number; 
 function DocumentPanel({
   title, icon: Icon, content, onContentChange, fileName, generatedLang,
   accentColor = "#0A66C2", fontFamily = "'Arial', sans-serif", isCoverLetter = false,
-  nameAlign = "center", sectionStyle = "underline",
+  nameAlign = "center", sectionStyle = "underline", templateId = "modern",
 }: {
   title: string;
   icon: React.ElementType;
@@ -112,6 +112,7 @@ function DocumentPanel({
   isCoverLetter?: boolean;
   nameAlign?: "center" | "left";
   sectionStyle?: "underline" | "left-border" | "minimal" | "filled";
+  templateId?: import("@/components/resume/resume-templates").TemplateId;
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editHtml, setEditHtml] = useState("");
@@ -121,9 +122,9 @@ function DocumentPanel({
 
   const downloadPDF = () => {
     if (isCoverLetter) {
-      openPrintCoverLetter(content, fileName);
+      openPrintCoverLetter(content, fileName, accentColor);
     } else {
-      openPrintWithTemplate(content, "modern", fileName);
+      openPrintWithTemplate(content, templateId, fileName);
     }
   };
 
@@ -131,7 +132,7 @@ function DocumentPanel({
     if (isCoverLetter) {
       await downloadDocxCoverLetter(content, docxFilename);
     } else {
-      await downloadDocxWithTemplate(content, "modern", docxFilename);
+      await downloadDocxWithTemplate(content, templateId, docxFilename);
     }
   };
 
@@ -736,6 +737,7 @@ export function GenerateClient({
                 fontFamily={countryStyle.fontFamily}
                 nameAlign={countryStyle.nameAlign}
                 sectionStyle={countryStyle.sectionStyle}
+                templateId={countryToTemplateId(form.targetCountry)}
                 isCoverLetter={false}
               />
               <DocumentPanel
@@ -749,6 +751,7 @@ export function GenerateClient({
                 fontFamily={countryStyle.fontFamily}
                 nameAlign={countryStyle.nameAlign}
                 sectionStyle={countryStyle.sectionStyle}
+                templateId={countryToTemplateId(form.targetCountry)}
                 isCoverLetter={true}
               />
             </div>
