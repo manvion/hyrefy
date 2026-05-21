@@ -141,7 +141,8 @@ export default function BillingPage() {
   const autoCheckout = searchParams.get("checkout") === "1";
 
   const [showCheckout, setShowCheckout] = useState(false);
-  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
+  const billingParam = searchParams.get("billing");
+  const [billing, setBilling] = useState<"monthly" | "yearly">(billingParam === "yearly" ? "yearly" : "monthly");
   const [portalLoading, setPortalLoading] = useState(false);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [pricing, setPricing] = useState<CountryPrice | null>(null);
@@ -355,45 +356,6 @@ export default function BillingPage() {
               </motion.div>
             )}
 
-            {/* Billing toggle */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="inline-flex items-center gap-1 rounded-xl border border-border/50 bg-card/30 p-1">
-                <button
-                  onClick={() => setBilling("monthly")}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all ${
-                    billing === "monthly"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Monthly
-                  {isNewUser && billing === "monthly" && (
-                    <span className="ml-2 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
-                      50% OFF 1ST
-                    </span>
-                  )}
-                </button>
-                <button
-                  onClick={() => setBilling("yearly")}
-                  className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                    billing === "yearly"
-                      ? "bg-primary text-primary-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Annual
-                  <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
-                    Save 50%
-                  </span>
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {billing === "yearly"
-                  ? `Pay once per year · ${yearlyTotalDisplay}/yr · Prices in ${label}`
-                  : `Pay monthly · Prices in ${label} · Cancel anytime`}
-              </p>
-            </div>
-
             {/* Plan cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Free */}
@@ -468,9 +430,49 @@ export default function BillingPage() {
                     ))}
                   </ul>
 
+                  {/* Billing period selector — change this before checkout */}
+                  <div className="mb-4">
+                    <p className="text-xs text-muted-foreground mb-2 font-medium">Choose billing period:</p>
+                    <div className="inline-flex w-full items-center gap-1 rounded-xl border border-border/50 bg-muted/30 p-1">
+                      <button
+                        onClick={() => setBilling("monthly")}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${
+                          billing === "monthly"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Monthly
+                        {isNewUser && billing === "monthly" && (
+                          <span className="ml-1.5 text-[10px] font-bold bg-emerald-500/20 text-emerald-400 px-1.5 py-0.5 rounded">
+                            50% OFF 1ST
+                          </span>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setBilling("yearly")}
+                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+                          billing === "yearly"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        Annual
+                        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded">
+                          Save 50%
+                        </span>
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-1.5">
+                      {billing === "yearly"
+                        ? `${yearlyTotalDisplay} billed once per year · Prices in ${label}`
+                        : `Prices in ${label} · Cancel anytime`}
+                    </p>
+                  </div>
+
                   <Button onClick={() => setShowCheckout(true)} variant="gradient" className="w-full" size="lg">
                     <CreditCard className="mr-2 h-4 w-4" />
-                    {billing === "yearly" ? "Get Annual Plan" : isNewUser ? "Claim 50% Off & Upgrade" : "Upgrade to Premium"}
+                    {billing === "yearly" ? "Get Annual Plan · Save 50%" : isNewUser ? "Claim 50% Off & Upgrade" : "Upgrade to Premium"}
                   </Button>
 
                   <p className="text-[11px] text-muted-foreground mt-3 flex items-center justify-center gap-1">

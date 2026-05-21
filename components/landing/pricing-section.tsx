@@ -148,9 +148,13 @@ export function PricingSection() {
                 <span className="text-4xl font-bold">{price.symbol}{displayPrice}</span>
                 <span className="text-muted-foreground">/mo</span>
               </div>
-              {billing === "yearly" && (
+              {billing === "yearly" ? (
                 <p className="text-xs text-emerald-400 mb-2">
                   {price.symbol}{price.yearly} billed annually · Save {yearlySavings}%
+                </p>
+              ) : (
+                <p className="text-xs text-emerald-400 mb-2 flex items-center gap-1">
+                  🎁 New users: 50% off your first month
                 </p>
               )}
               <p className="text-sm text-muted-foreground">{premium.desc}</p>

@@ -83,9 +83,11 @@ function ClerkSignUp({ redirectUrl }: { redirectUrl: string }) {
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
-        {redirectUrl === "/billing?checkout=1" && (
+        {redirectUrl.startsWith("/billing?checkout=1") && (
           <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center max-w-sm w-full">
-            <p className="text-sm font-semibold text-amber-400">Premium Plan Selected</p>
+            <p className="text-sm font-semibold text-amber-400">
+              {redirectUrl.includes("billing=yearly") ? "Annual Plan Selected · Save 50%" : "Premium Plan Selected"}
+            </p>
             <p className="text-xs text-muted-foreground mt-0.5">Create your account, then complete payment to unlock all features.</p>
           </div>
         )}
@@ -102,10 +104,14 @@ function ClerkSignUp({ redirectUrl }: { redirectUrl: string }) {
 export default async function SignUpPage({
   searchParams,
 }: {
-  searchParams: Promise<{ plan?: string }>;
+  searchParams: Promise<{ plan?: string; billing?: string }>;
 }) {
-  const { plan } = await searchParams;
-  const redirectUrl = plan === "premium" ? "/billing?checkout=1" : "/dashboard";
+  const { plan, billing } = await searchParams;
+  const isYearly = billing === "yearly";
+  const redirectUrl =
+    plan === "premium"
+      ? `/billing?checkout=1${isYearly ? "&billing=yearly" : ""}`
+      : "/dashboard";
   if (isDemoMode) return <DemoSignUp />;
   return <ClerkSignUp redirectUrl={redirectUrl} />;
 }
