@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES, type CountryCode } from "@/lib/ai/countries";
 import { ResumePreview, COUNTRY_STYLES } from "@/components/resume/resume-preview";
+import { openPrintWithTemplate, downloadDocxWithTemplate } from "@/components/resume/resume-templates";
 
 type Language = "en" | "fr";
 
@@ -250,71 +251,12 @@ export function BuildClient({ buildsUsed = 0, buildsLimit = 1, isPremium = false
 
   const downloadPDF = (lang: Language) => {
     const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
-    const style = COUNTRY_STYLES[targetCountry] ?? COUNTRY_STYLES.CA;
-    const ac = style.accentColor;
-    const ff = style.fontFamily;
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Resume</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:${ff};font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}
-h1{font-size:22pt;font-weight:700;text-align:center;color:${ac};letter-spacing:-0.02em;margin-bottom:2px}
-.contact{text-align:center;font-size:9.5pt;color:#4b5563;margin-bottom:2px}
-.section{margin-top:18px;margin-bottom:6px;font-size:9.5pt;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:${ac};border-bottom:1.5px solid ${ac}55;padding-bottom:2px}
-.bullet{display:flex;gap:8px;margin-left:8px;margin:1px 0 1px 8px}
-.bullet .dot{color:${ac};flex-shrink:0}
-.job{font-size:11pt;font-weight:600;color:#111827;margin-top:10px}
-.body{font-size:10.5pt;color:#374151;margin:1px 0}
-@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}
-</style></head><body>
-${text.split("\n").map(line => {
-  const t = line.trim();
-  if (!t) return "<div style='height:6px'></div>";
-  const firstContent = text.split("\n").find(l => l.trim());
-  if (line === firstContent) return `<h1>${t}</h1>`;
-  if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) return `<div class="section">${t}</div>`;
-  if (t.match(/^[•\-–—*]\s/)) return `<div class="bullet"><span class="dot">•</span><span>${t.replace(/^[•\-–—*]\s/, "")}</span></div>`;
-  return `<p class="body">${t}</p>`;
-}).join("\n")}
-<script>window.onload=()=>{window.print()}<\/script></body></html>`;
-    const blob = new Blob([html], { type: "text/html" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.target = "_blank"; a.click();
-    URL.revokeObjectURL(url);
+    openPrintWithTemplate(text, "modern", `Resume-${lang}`);
   };
 
   const downloadDocx = async (lang: Language) => {
     const text = lang === "fr" && translatedFr ? translatedFr : buildResumeText(data, lang, targetCountry);
-    const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
-    const lines = text.split("\n");
-    const firstContent = lines.find(l => l.trim()) ?? "";
-    const children: InstanceType<typeof Paragraph>[] = [];
-    let passedName = false;
-    for (const line of lines) {
-      const t = line.trim();
-      if (line === firstContent) {
-        passedName = true;
-        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 48, color: "0A66C2" })], alignment: AlignmentType.CENTER, spacing: { after: 120 } }));
-        continue;
-      }
-      if (!passedName) continue;
-      if (!t) { children.push(new Paragraph({ text: "" })); continue; }
-      if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) {
-        children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 22, color: "0A66C2" })], spacing: { before: 240, after: 80 }, border: { bottom: { color: "0A66C2", size: 6, style: BorderStyle.SINGLE, space: 4 } } }));
-        continue;
-      }
-      if (t.match(/^[•\-–—*]\s/)) {
-        children.push(new Paragraph({ children: [new TextRun({ text: t.replace(/^[•\-–—*]\s/, ""), size: 20 })], bullet: { level: 0 } }));
-        continue;
-      }
-      children.push(new Paragraph({ children: [new TextRun({ text: t, size: 20 })], spacing: { after: 40 } }));
-    }
-    const doc = new Document({ sections: [{ properties: {}, children }] });
-    const blob = await Packer.toBlob(doc);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `resume-${lang}.docx`;
-    a.click();
-    URL.revokeObjectURL(url);
+    await downloadDocxWithTemplate(text, "modern", `resume-${lang}.docx`);
   };
 
   const previewText = previewLang === "fr"

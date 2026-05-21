@@ -340,6 +340,54 @@ body { font-family: 'Arial', 'Helvetica', sans-serif; font-size: 10.5pt; color: 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${styles[templateId]}</style></head><body>${bodyHtml[templateId]}<script>window.onload=()=>window.print();<\/script></body></html>`;
 }
 
+// ─── Cover letter print / DOCX ────────────────────────────────────────────────
+
+export function openPrintCoverLetter(text: string, title: string) {
+  const paragraphs = text.split("\n").map(line => {
+    const t = line.trim();
+    if (!t) return `<div style="height:10pt"></div>`;
+    return `<p>${t.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+  }).join("\n");
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Georgia','Times New Roman',serif;font-size:11pt;line-height:1.75;color:#111;background:#fff}
+.page{max-width:680px;margin:0 auto;padding:52px 56px}
+p{margin-bottom:14pt}
+@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}@page{margin:2cm;size:A4}}
+</style></head><body><div class="page">${paragraphs}</div><script>window.onload=()=>window.print();<\/script></body></html>`;
+
+  const blob = new Blob([html], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadDocxCoverLetter(text: string, filename: string) {
+  const { Document, Paragraph, TextRun, Packer } = await import("docx");
+
+  const children: InstanceType<typeof Paragraph>[] = text.split("\n").map(line => {
+    const t = line.trim();
+    if (!t) return new Paragraph({ text: "" });
+    return new Paragraph({
+      children: [new TextRun({ text: t, size: 22, font: "Georgia" })],
+      spacing: { after: 160 },
+    });
+  });
+
+  const doc = new Document({ sections: [{ properties: {}, children }] });
+  const blob = await Packer.toBlob(doc);
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function openPrintWithTemplate(text: string, templateId: TemplateId, title: string) {
   const html = buildFullHtml(text, templateId, title);
   const blob = new Blob([html], { type: "text/html" });

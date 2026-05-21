@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils/cn";
 import { SUPPORTED_COUNTRIES } from "@/lib/ai/countries";
 import Link from "next/link";
+import { openPrintWithTemplate, openPrintCoverLetter, downloadDocxWithTemplate, downloadDocxCoverLetter } from "@/components/resume/resume-templates";
 
 interface ScanItem {
   id: string;
@@ -67,47 +68,7 @@ function atsColor(score: number) {
   return "text-red-500 border-red-500/30 bg-red-500/10";
 }
 
-function openPDF(content: string, title: string) {
-  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Georgia,serif;font-size:11pt;line-height:1.55;color:#111;padding:40px 48px;max-width:820px;margin:0 auto}pre{white-space:pre-wrap;font-family:inherit}@media print{body{padding:20px}@page{margin:1.8cm;size:letter}}</style>
-</head><body><pre>${content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</pre>
-<script>window.onload=()=>{window.print()}<\/script></body></html>`;
-  const url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-  Object.assign(document.createElement("a"), { href: url, target: "_blank" }).click();
-  URL.revokeObjectURL(url);
-}
 
-async function downloadDocx(content: string, filename: string) {
-  const { Document, Paragraph, TextRun, AlignmentType, Packer, BorderStyle } = await import("docx");
-  const lines = content.split("\n");
-  const firstContent = lines.find(l => l.trim()) ?? "";
-  const children: InstanceType<typeof Paragraph>[] = [];
-  let passedName = false;
-  for (const line of lines) {
-    const t = line.trim();
-    if (line === firstContent && !passedName) {
-      passedName = true;
-      children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 48, color: "0A66C2" })], alignment: AlignmentType.CENTER, spacing: { after: 120 } }));
-      continue;
-    }
-    if (!passedName) continue;
-    if (!t) { children.push(new Paragraph({ text: "" })); continue; }
-    if (t === t.toUpperCase() && t.length > 2 && t.length < 60 && !t.match(/^[•\-–—*]/)) {
-      children.push(new Paragraph({ children: [new TextRun({ text: t, bold: true, size: 22, color: "0A66C2" })], spacing: { before: 240, after: 80 }, border: { bottom: { color: "0A66C2", size: 6, style: BorderStyle.SINGLE, space: 4 } } }));
-      continue;
-    }
-    if (t.match(/^[•\-–—*]\s/)) {
-      children.push(new Paragraph({ children: [new TextRun({ text: t.replace(/^[•\-–—*]\s/, ""), size: 20 })], bullet: { level: 0 } }));
-      continue;
-    }
-    children.push(new Paragraph({ children: [new TextRun({ text: t, size: 20 })], spacing: { after: 40 } }));
-  }
-  const doc = new Document({ sections: [{ properties: {}, children }] });
-  const blob = await Packer.toBlob(doc);
-  const url = URL.createObjectURL(blob);
-  Object.assign(document.createElement("a"), { href: url, download: filename.replace(/\.txt$/, ".docx") }).click();
-  URL.revokeObjectURL(url);
-}
 
 function groupByDate(scans: ScanItem[]) {
   const now = new Date();
@@ -242,11 +203,11 @@ function ScanCard({
                 {hasResume && (
                   <>
                     <Button size="sm" variant="gradient" className="h-7 text-xs gap-1.5"
-                      onClick={() => handleDownload(() => openPDF(ai!.tailoredResume!, `Resume-${slug}`))}>
+                      onClick={() => handleDownload(() => openPrintWithTemplate(ai!.tailoredResume!, "modern", `Resume-${slug}`))}>
                       <FileText className="h-3 w-3" />Resume PDF
                     </Button>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-                      onClick={() => handleDownload(() => downloadDocx(ai!.tailoredResume!, `resume-${slug}.docx`))}>
+                      onClick={() => handleDownload(() => downloadDocxWithTemplate(ai!.tailoredResume!, "modern", `resume-${slug}.docx`))}>
                       <Download className="h-3 w-3" />.docx
                     </Button>
                   </>
@@ -254,11 +215,11 @@ function ScanCard({
                 {hasCover && (
                   <>
                     <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-                      onClick={() => handleDownload(() => openPDF(ai!.coverLetter!, `Cover-${slug}`))}>
+                      onClick={() => handleDownload(() => openPrintCoverLetter(ai!.coverLetter!, `Cover-${slug}`))}>
                       <Mail className="h-3 w-3" />Cover Letter PDF
                     </Button>
                     <Button size="sm" variant="ghost" className="h-7 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
-                      onClick={() => handleDownload(() => downloadDocx(ai!.coverLetter!, `cover-${slug}.docx`))}>
+                      onClick={() => handleDownload(() => downloadDocxCoverLetter(ai!.coverLetter!, `cover-${slug}.docx`))}>
                       <Download className="h-3 w-3" />.docx
                     </Button>
                   </>
