@@ -82,7 +82,7 @@ export function buildResumePrompt(input: GenerateInput): { prompt: string; syste
   const prompt = `COUNTRY: ${countryStd}
 
 MASTER RESUME — only source of facts:
-${masterResumeText.slice(0, 4000)}
+${masterResumeText.slice(0, 8000)}
 
 JOB: ${jobTitle}${company ? ` at ${company}` : ""}  |  ${countryName}  |  ${isFr ? "French output" : "English output"}
 
@@ -116,7 +116,7 @@ async function generateTailoredResume(
   input: GenerateInput
 ): Promise<{ raw: string; clean: string }> {
   const { prompt, system } = buildResumePrompt(input);
-  const raw = await generateText(prompt, { maxTokens: 3500, system, task: "RESUME" });
+  const raw = await generateText(prompt, { maxTokens: 4500, system, task: "RESUME" });
   return { raw, clean: extractCleanResume(raw) };
 }
 
@@ -138,7 +138,7 @@ export function buildCoverLetterPrompt(
 ${isFr ? "Write in French (Canada)." : "Write in English."}
 
 RESUME (extract candidate name and contact from the first 3 lines):
-${masterResumeText.slice(0, 2500)}
+${masterResumeText.slice(0, 6000)}
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 1500)}

@@ -55,7 +55,7 @@ TARGET ROLE: ${jobTitle}
 ${companyName ? `COMPANY: ${companyName}` : ""}
 
 RESUME (extract candidate name and contact from the first 3 lines):
-${resumeText.slice(0, 6000)}
+${resumeText.slice(0, 8000)}
 
 JOB DESCRIPTION:
 ${jobDescription.slice(0, 3000)}

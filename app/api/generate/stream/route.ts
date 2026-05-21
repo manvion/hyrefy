@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
         let rawResume = "";
         for await (const token of orStream(OR_MODELS.RESUME, prompt, {
           system,
-          maxTokens: 3500,
+          maxTokens: 4500,
           temperature: 0.65,
         })) {
           rawResume += token;

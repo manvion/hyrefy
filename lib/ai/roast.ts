@@ -38,7 +38,7 @@ export async function roastResume(resumeText: string): Promise<RoastResult> {
 
 Analyze this resume and provide an honest roast:
 
-${resumeText.slice(0, 4000)}
+${resumeText.slice(0, 8000)}
 
 Detected buzzwords: ${foundBuzzwords.join(", ") || "none"}
 Detected weak verbs: ${foundWeakVerbs.join(", ") || "none"}

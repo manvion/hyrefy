@@ -39,7 +39,7 @@ Generate exactly 20 high-quality interview questions for:
 - Level: ${level || "Mid-level"}
 - Industry: ${industry || "Technology"}
 ${jobDescription ? `\nJob Description (extract technical requirements, tools, frameworks, and skills mentioned):\n${jobDescription.slice(0, 2000)}` : ""}
-${hasResume ? `\nCANDIDATE RESUME:\n${safeResumeText.slice(0, 2500)}` : ""}
+${hasResume ? `\nCANDIDATE RESUME:\n${safeResumeText.slice(0, 6000)}` : ""}
 
 CRITICAL RULES FOR SAMPLE ANSWERS:
 ${hasResume ? `• For behavioral, situational, HR, and STAR questions: write sample answers that reference the candidate's ACTUAL experiences from their resume above. Name their real companies, real projects, real technologies, real metrics. Make it sound like the candidate is speaking from their genuine background.
