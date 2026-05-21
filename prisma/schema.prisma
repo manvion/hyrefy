@@ -198,7 +198,7 @@ model UserReport {
   status       String   @default("new") // new, in_progress, resolved
   adminNote    String?  @db.Text
   createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  updatedAt    DateTime @default(now()) @updatedAt
 
   @@map("user_reports")
 }
