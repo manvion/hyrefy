@@ -212,35 +212,51 @@ export default function BillingPage() {
 
   const [showCheckout, setShowCheckout] = useState(false);
   const billingParam = searchParams.get("billing") as "monthly" | "yearly" | null;
-  const [portalLoading, setPortalLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [pricing, setPricing] = useState<CountryPrice | null>(null);
 
   useEffect(() => {
-    fetch("/api/user/subscription")
-      .then((r) => r.json())
-      .then((sub) => {
-        setSubscription(sub);
-        if (autoCheckout && sub?.status !== "PREMIUM") setShowCheckout(true);
-      })
-      .catch(() => {});
-    fetch("/api/user/geo")
-      .then((r) => r.json())
-      .then((d) => setPricing(d.pricing))
-      .catch(() => {});
     if (success) {
       toast({ title: "Welcome to Premium!", description: "Your subscription is now active.", variant: "success" });
     }
-  }, [success, autoCheckout]);
+
+    Promise.all([
+      fetch("/api/user/subscription").then((r) => r.json()).catch(() => null),
+      fetch("/api/user/geo").then((r) => r.json()).then((d) => d.pricing).catch(() => null),
+    ]).then(([sub, pricingData]) => {
+      if (sub) setSubscription(sub);
+      if (pricingData) setPricing(pricingData);
+
+      // Premium users with a Stripe subscription → go directly to portal, skip pricing UI
+      if (sub?.status === "PREMIUM" && sub?.hasStripeCustomer && !autoCheckout && !success) {
+        fetch("/api/stripe/portal", { method: "POST" })
+          .then((r) => r.json())
+          .then((data) => {
+            if (data.url) {
+              window.location.href = data.url;
+              // keep pageLoading true — spinner stays until browser navigates away
+            } else {
+              setPageLoading(false);
+            }
+          })
+          .catch(() => setPageLoading(false));
+      } else {
+        if (autoCheckout && sub?.status !== "PREMIUM") setShowCheckout(true);
+        setPageLoading(false);
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const isPremium = subscription?.status === "PREMIUM";
   const isNewUser = !subscription?.stripeSubscriptionId && !isPremium;
 
-  // Pricing display
-  const monthlyDisplay = pricing?.displayAmount ?? "$20";
-  const yearlyPerMonthDisplay = pricing ? `${pricing.symbol}${pricing.displayYearlyPerMonth}` : "$10";
-  const yearlyTotalDisplay = pricing?.displayYearlyTotal ?? "$120";
-  const firstMonthDisplay = pricing?.displayFirstMonth ?? "$10";
+  // Pricing display — pricing is always set before pageLoading becomes false, so no US flash
+  const monthlyDisplay = pricing?.displayAmount ?? "";
+  const yearlyPerMonthDisplay = pricing ? `${pricing.symbol}${pricing.displayYearlyPerMonth}` : "";
+  const yearlyTotalDisplay = pricing?.displayYearlyTotal ?? "";
+  const firstMonthDisplay = pricing?.displayFirstMonth ?? "";
 
   // Days remaining
   const daysRemaining = (() => {
@@ -252,17 +268,17 @@ export default function BillingPage() {
   const isExpired = daysRemaining !== null && daysRemaining <= 0;
 
   const handlePortal = async () => {
-    setPortalLoading(true);
+    setPageLoading(true);
     try {
       const res = await fetch("/api/stripe/portal", { method: "POST" });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
-        return; // keep overlay visible until browser navigates away
+        return; // keep spinner until browser navigates away
       }
       throw new Error(data.error || "Portal error");
     } catch (err: unknown) {
-      setPortalLoading(false);
+      setPageLoading(false);
       toast({
         title: "Error",
         description: err instanceof Error ? err.message : "Failed to open portal",
@@ -271,15 +287,17 @@ export default function BillingPage() {
     }
   };
 
+  if (pageLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Portal redirect overlay — prevents flash of pricing page while redirecting */}
-      {portalLoading && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Opening customer portal…</p>
-        </div>
-      )}
       <div className="max-w-4xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Billing</h1>
@@ -323,10 +341,10 @@ export default function BillingPage() {
             </div>
             <button
               onClick={handlePortal}
-              disabled={portalLoading}
+              disabled={pageLoading}
               className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
-              {portalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Renew"}
+              {pageLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Renew"}
             </button>
           </motion.div>
         )}
@@ -377,13 +395,13 @@ export default function BillingPage() {
             )}
             {isPremium && subscription?.hasStripeCustomer && (
               <div className="flex flex-wrap gap-2">
-                <Button onClick={handlePortal} disabled={portalLoading} variant="outline">
-                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+                <Button onClick={handlePortal} disabled={pageLoading} variant="outline">
+                  {pageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
                   Manage Subscription
                 </Button>
-                <Button onClick={handlePortal} disabled={portalLoading} variant="outline"
+                <Button onClick={handlePortal} disabled={pageLoading} variant="outline"
                   className="text-destructive border-destructive/30 hover:bg-destructive/10">
-                  {portalLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
+                  {pageLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <X className="mr-2 h-4 w-4" />}
                   Cancel Plan
                 </Button>
               </div>

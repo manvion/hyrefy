@@ -20,23 +20,25 @@ const CURRENCY_MAP: Record<string, { symbol: string; monthly: number; yearly: nu
   IN: { symbol: "₹",   monthly: 1000,  yearly: 6000,  firstMonth: 500, code: "INR" },
 };
 
-const DEFAULT_CURRENCY = CURRENCY_MAP.CA;
+type CurrencyEntry = (typeof CURRENCY_MAP)[string];
 
 function useGeoPrice() {
-  const [price, setPrice] = useState(DEFAULT_CURRENCY);
-  const [countryCode, setCountryCode] = useState("CA");
+  const [price, setPrice] = useState<CurrencyEntry | null>(null);
+  const [countryCode, setCountryCode] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/geo")
       .then((r) => r.json())
       .then((d) => {
         const code = d.country as string;
-        if (CURRENCY_MAP[code]) {
-          setPrice(CURRENCY_MAP[code]);
-          setCountryCode(code);
-        }
+        const entry = CURRENCY_MAP[code] ?? CURRENCY_MAP.CA;
+        setPrice(entry);
+        setCountryCode(CURRENCY_MAP[code] ? code : "CA");
       })
-      .catch(() => {});
+      .catch(() => {
+        setPrice(CURRENCY_MAP.CA);
+        setCountryCode("CA");
+      });
   }, []);
 
   return { price, countryCode };
@@ -48,7 +50,7 @@ export function PricingSection() {
   const { price, countryCode } = useGeoPrice();
   const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
 
-  const displayPrice = billing === "monthly" ? price.firstMonth : Math.round(price.yearly / 12);
+  const displayPrice = price ? (billing === "monthly" ? price.firstMonth : Math.round(price.yearly / 12)) : null;
 
   return (
     <section id="pricing" className="py-24 relative">
@@ -88,10 +90,12 @@ export function PricingSection() {
           </div>
 
           {/* Geo currency indicator */}
-          <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-muted-foreground">
-            <Globe className="h-3 w-3" />
-            <span>Prices shown in {price.code} for {countryCode}</span>
-          </div>
+          {price && (
+            <div className="flex items-center justify-center gap-1.5 mt-3 text-xs text-muted-foreground">
+              <Globe className="h-3 w-3" />
+              <span>Prices shown in {price.code} for {countryCode}</span>
+            </div>
+          )}
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -142,7 +146,12 @@ export function PricingSection() {
             </div>
             <div className="mb-6">
               <h3 className="text-xl font-bold mb-1">{premium.name}</h3>
-              {billing === "yearly" ? (
+              {!price ? (
+                <div className="space-y-2 mb-2">
+                  <div className="h-8 w-32 rounded-lg bg-muted/50 animate-pulse" />
+                  <div className="h-4 w-48 rounded bg-muted/40 animate-pulse" />
+                </div>
+              ) : billing === "yearly" ? (
                 <>
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-lg text-muted-foreground line-through">{price.symbol}{price.monthly}/mo</span>
