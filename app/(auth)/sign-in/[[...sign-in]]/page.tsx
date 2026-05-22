@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { SignIn } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, X } from "lucide-react";
 import { HyreLogo } from "@/components/shared/hyrefy-logo";
 
 const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
@@ -24,6 +24,10 @@ const clerkAppearance = {
     borderRadius: "0.75rem",
     fontFamily: "inherit",
     fontSize: "14px",
+  },
+  elements: {
+    badge: { display: "none" },
+    footer__badge: { display: "none" },
   },
 };
 
@@ -73,10 +77,19 @@ function ClerkSignIn() {
             Hyrefy
           </span>
         </Link>
-        <p className="text-sm text-slate-500 dark:text-muted-foreground">
-          New to Hyrefy?{" "}
-          <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">Create account</Link>
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="text-sm text-slate-500 dark:text-muted-foreground">
+            New to Hyrefy?{" "}
+            <Link href="/sign-up" className="text-[#0A66C2] hover:underline font-medium">Create account</Link>
+          </p>
+          <Link
+            href="/"
+            className="h-8 w-8 rounded-full flex items-center justify-center text-slate-400 dark:text-muted-foreground hover:text-slate-700 dark:hover:text-foreground hover:bg-slate-100 dark:hover:bg-accent transition-colors"
+            title="Back to home"
+          >
+            <X className="h-4 w-4" />
+          </Link>
+        </div>
       </nav>
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-16">
