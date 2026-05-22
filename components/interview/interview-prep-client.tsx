@@ -95,9 +95,11 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
           if (!t.startsWith("data:")) continue;
           try {
             const event = JSON.parse(t.slice(5).trim()) as { type: string; question?: InterviewQuestion; overview?: string; keyThemes?: string[]; message?: string };
-            if (event.type === "question" && event.question) {
+            if (event.type === "status") {
+              setStatusMsg(event.message ?? "");
+            } else if (event.type === "question" && event.question) {
               qCount++;
-              setStatusMsg(`Generating question ${qCount} of 10...`);
+              setStatusMsg(`Generating question ${qCount} of 20...`);
               setQuestions(prev => [...prev, event.question!]);
               if (qCount === 1) setExpandedIdx(0);
             } else if (event.type === "meta") {
@@ -321,17 +323,17 @@ export function InterviewPrepClient({ isPremium = false, prepsUsed = 0, prepsLim
                 animate={{ opacity: 1 }}
                 className="rounded-xl border border-border/30 bg-card/20 p-4 flex items-center gap-3"
               >
-                <div className="flex gap-1">
+                <div className="flex gap-1 shrink-0">
                   {[0, 1, 2].map(i => (
                     <motion.div
                       key={i}
                       className="w-2 h-2 rounded-full bg-primary"
-                      animate={{ scale: [1, 1.4, 1] }}
-                      transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15 }}
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.2 }}
                     />
                   ))}
                 </div>
-                <span className="text-sm text-muted-foreground">{statusMsg}</span>
+                <span className="text-sm text-muted-foreground">{statusMsg || "Working..."}</span>
               </motion.div>
             )}
           </div>

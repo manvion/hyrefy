@@ -114,6 +114,7 @@ export async function generateInterviewPrep(input: InterviewPrepInput): Promise<
 export type StreamEvent =
   | { type: "question"; question: InterviewQuestion }
   | { type: "meta"; overview: string; keyThemes: string[] }
+  | { type: "status"; message: string }
   | { type: "error"; message: string };
 
 export async function* streamInterviewPrep(input: InterviewPrepInput): AsyncGenerator<StreamEvent> {
@@ -122,11 +123,18 @@ export async function* streamInterviewPrep(input: InterviewPrepInput): AsyncGene
     ? redactPII(input.resumeText!)
     : { text: "", restore: (s: string) => s };
 
+  yield { type: "status", message: "Connecting to AI..." };
+
   const prompt = buildPrompt(input, safeResumeText, "ndjson");
 
   let buffer = "";
+  let aiStarted = false;
   try {
     for await (const token of streamText(prompt, { maxTokens: 6000 })) {
+      if (!aiStarted) {
+        aiStarted = true;
+        yield { type: "status", message: "Generating your questions..." };
+      }
       buffer += token;
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";

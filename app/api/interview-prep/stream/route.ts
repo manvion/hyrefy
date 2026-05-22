@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
         controller.enqueue(enc.encode(`data: ${JSON.stringify(event)}\n\n`));
       }
 
+      // Immediate feedback — client receives this before AI call starts
+      send({ type: "status", message: "Preparing your interview session..." });
+
       try {
         for await (const event of streamInterviewPrep({ jobTitle, company, jobDescription, industry, level, resumeText })) {
           send(event);
